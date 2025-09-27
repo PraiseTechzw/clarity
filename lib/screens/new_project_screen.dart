@@ -25,11 +25,17 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
   List<Client> _clients = [];
   Client? _selectedClient;
   bool _isNewClient = false;
+  String? _suggestedPriority;
+  String? _suggestedDeadline;
+  String? _suggestionReason;
+  int _currentStep = 0;
+  final PageController _pageController = PageController();
 
   @override
   void initState() {
     super.initState();
     _loadClients();
+    _budgetController.addListener(_calculateIntelligentSuggestions);
   }
 
   @override
@@ -38,6 +44,7 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
     _clientController.dispose();
     _budgetController.dispose();
     _notesController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -45,6 +52,86 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
     final provider = context.read<ProjectProvider>();
     setState(() {
       _clients = provider.clients;
+    });
+  }
+
+  void _calculateIntelligentSuggestions() {
+    if (_budgetController.text.isEmpty) return;
+
+    final budget = double.tryParse(_budgetController.text);
+    if (budget == null) return;
+
+    final now = DateTime.now();
+    final daysUntilDeadline = _selectedDeadline.difference(now).inDays;
+
+    // Calculate priority based on budget and deadline
+    Priority suggestedPriority;
+    String reason;
+
+    if (budget >= 10000) {
+      // High-value project
+      if (daysUntilDeadline <= 7) {
+        suggestedPriority = Priority.high;
+        reason =
+            "High-value project (\$${budget.toStringAsFixed(0)}) with urgent deadline (${daysUntilDeadline} days)";
+      } else if (daysUntilDeadline <= 30) {
+        suggestedPriority = Priority.high;
+        reason =
+            "High-value project (\$${budget.toStringAsFixed(0)}) with moderate timeline (${daysUntilDeadline} days)";
+      } else {
+        suggestedPriority = Priority.medium;
+        reason =
+            "High-value project (\$${budget.toStringAsFixed(0)}) with flexible timeline (${daysUntilDeadline} days)";
+      }
+    } else if (budget >= 5000) {
+      // Medium-value project
+      if (daysUntilDeadline <= 3) {
+        suggestedPriority = Priority.high;
+        reason =
+            "Medium-value project (\$${budget.toStringAsFixed(0)}) with urgent deadline (${daysUntilDeadline} days)";
+      } else if (daysUntilDeadline <= 14) {
+        suggestedPriority = Priority.medium;
+        reason =
+            "Medium-value project (\$${budget.toStringAsFixed(0)}) with reasonable timeline (${daysUntilDeadline} days)";
+      } else {
+        suggestedPriority = Priority.medium;
+        reason =
+            "Medium-value project (\$${budget.toStringAsFixed(0)}) with flexible timeline (${daysUntilDeadline} days)";
+      }
+    } else {
+      // Low-value project
+      if (daysUntilDeadline <= 3) {
+        suggestedPriority = Priority.medium;
+        reason =
+            "Small project (\$${budget.toStringAsFixed(0)}) with urgent deadline (${daysUntilDeadline} days)";
+      } else if (daysUntilDeadline <= 7) {
+        suggestedPriority = Priority.medium;
+        reason =
+            "Small project (\$${budget.toStringAsFixed(0)}) with short timeline (${daysUntilDeadline} days)";
+      } else {
+        suggestedPriority = Priority.low;
+        reason =
+            "Small project (\$${budget.toStringAsFixed(0)}) with flexible timeline (${daysUntilDeadline} days)";
+      }
+    }
+
+    // Calculate suggested deadline based on budget
+    DateTime suggestedDeadline;
+    if (budget >= 10000) {
+      // High-value projects need more time
+      suggestedDeadline = now.add(const Duration(days: 60));
+    } else if (budget >= 5000) {
+      // Medium-value projects
+      suggestedDeadline = now.add(const Duration(days: 30));
+    } else {
+      // Small projects can be done quickly
+      suggestedDeadline = now.add(const Duration(days: 14));
+    }
+
+    setState(() {
+      _suggestedPriority = suggestedPriority.name.toUpperCase();
+      _suggestedDeadline = DateFormat('MMM d, yyyy').format(suggestedDeadline);
+      _suggestionReason = reason;
     });
   }
 
@@ -207,14 +294,226 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
             ),
             const SizedBox(height: 16),
 
+            // Intelligent Suggestions
+            if (_suggestedPriority != null && _suggestionReason != null)
+              Card(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.lightbulb,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'AI Suggestions',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.outline.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.flag,
+                                  size: 16,
+                                  color: _getPriorityColor(_selectedPriority),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Suggested Priority: $_suggestedPriority',
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                            if (_suggestedDeadline != null) ...[
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.schedule,
+                                    size: 16,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Suggested Deadline: $_suggestedDeadline',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
+                            ],
+                            const SizedBox(height: 8),
+                            Text(
+                              _suggestionReason!,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                // Apply priority suggestion
+                                final priorityMap = {
+                                  'HIGH': Priority.high,
+                                  'MEDIUM': Priority.medium,
+                                  'LOW': Priority.low,
+                                };
+                                setState(() {
+                                  _selectedPriority =
+                                      priorityMap[_suggestedPriority] ??
+                                      Priority.medium;
+                                });
+                              },
+                              icon: const Icon(Icons.flag, size: 16),
+                              label: const Text('Apply Priority'),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                // Apply deadline suggestion
+                                final budget = double.tryParse(
+                                  _budgetController.text,
+                                );
+                                if (budget != null) {
+                                  DateTime suggestedDeadline;
+                                  if (budget >= 10000) {
+                                    suggestedDeadline = DateTime.now().add(
+                                      const Duration(days: 60),
+                                    );
+                                  } else if (budget >= 5000) {
+                                    suggestedDeadline = DateTime.now().add(
+                                      const Duration(days: 30),
+                                    );
+                                  } else {
+                                    suggestedDeadline = DateTime.now().add(
+                                      const Duration(days: 14),
+                                    );
+                                  }
+                                  setState(() {
+                                    _selectedDeadline = suggestedDeadline;
+                                  });
+                                }
+                              },
+                              icon: const Icon(Icons.schedule, size: 16),
+                              label: const Text('Apply Deadline'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            // Apply both suggestions
+                            final priorityMap = {
+                              'HIGH': Priority.high,
+                              'MEDIUM': Priority.medium,
+                              'LOW': Priority.low,
+                            };
+                            final budget = double.tryParse(
+                              _budgetController.text,
+                            );
+
+                            setState(() {
+                              _selectedPriority =
+                                  priorityMap[_suggestedPriority] ??
+                                  Priority.medium;
+                              if (budget != null) {
+                                if (budget >= 10000) {
+                                  _selectedDeadline = DateTime.now().add(
+                                    const Duration(days: 60),
+                                  );
+                                } else if (budget >= 5000) {
+                                  _selectedDeadline = DateTime.now().add(
+                                    const Duration(days: 30),
+                                  );
+                                } else {
+                                  _selectedDeadline = DateTime.now().add(
+                                    const Duration(days: 14),
+                                  );
+                                }
+                              }
+                            });
+                          },
+                          icon: const Icon(Icons.auto_awesome, size: 16),
+                          label: const Text('Apply All Suggestions'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primary,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
             // Budget
             TextFormField(
               controller: _budgetController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Budget *',
                 hintText: 'Enter project budget',
                 prefixText: '\$ ',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
+                suffixIcon: _suggestedPriority != null
+                    ? Icon(
+                        Icons.lightbulb,
+                        color: Theme.of(context).colorScheme.primary,
+                      )
+                    : null,
+                helperText: _suggestedPriority != null
+                    ? '💡 AI suggestions available!'
+                    : 'Enter budget to get intelligent suggestions',
+                helperStyle: TextStyle(
+                  color: _suggestedPriority != null
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
@@ -479,6 +778,8 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
       setState(() {
         _selectedDeadline = picked;
       });
+      // Recalculate suggestions with new deadline
+      _calculateIntelligentSuggestions();
     }
   }
 
