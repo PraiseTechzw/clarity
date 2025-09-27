@@ -18,7 +18,12 @@ class DatabaseHelper {
 
   Future<Database> _initDatabase() async {
     String path = join(await getDatabasesPath(), 'clarity.db');
-    return await openDatabase(path, version: 1, onCreate: _onCreate);
+    return await openDatabase(
+      path,
+      version: 2,
+      onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
+    );
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -32,7 +37,10 @@ class DatabaseHelper {
         deadline TEXT NOT NULL,
         priority TEXT NOT NULL,
         notes TEXT,
-        createdAt TEXT NOT NULL
+        createdAt TEXT NOT NULL,
+        phases TEXT DEFAULT '[]',
+        payments TEXT DEFAULT '[]',
+        projectNotes TEXT DEFAULT '[]'
       )
     ''');
 
