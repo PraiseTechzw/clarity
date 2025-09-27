@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../providers/project_provider.dart';
 import '../models/project.dart';
 import '../widgets/project_card.dart';
@@ -7,6 +8,7 @@ import '../widgets/filter_bottom_sheet.dart';
 import 'new_project_screen.dart';
 import 'project_details_screen.dart';
 import 'notifications_screen.dart';
+import 'analytics_dashboard.dart';
 
 class ProjectsDashboard extends StatefulWidget {
   const ProjectsDashboard({super.key});

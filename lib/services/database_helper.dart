@@ -23,7 +23,17 @@ class DatabaseHelper {
       version: 2,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
+      onDowngrade: _onDowngrade,
     );
+  }
+
+  Future<void> _onDowngrade(Database db, int oldVersion, int newVersion) async {
+    // Handle database downgrade if needed
+    // For now, we'll just recreate the database
+    await db.close();
+    await deleteDatabase(join(await getDatabasesPath(), 'clarity.db'));
+    _database = null;
+    await database; // This will recreate the database
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -123,20 +133,64 @@ class DatabaseHelper {
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-      // Add new columns to projects table
-      await db.execute(
-        'ALTER TABLE projects ADD COLUMN phases TEXT DEFAULT "[]"',
+      // Add new columns to projects table (with existence checks)
+      await _addColumnIfNotExists(
+        db,
+        'projects',
+        'phases',
+        'TEXT DEFAULT "[]"',
       );
-      await db.execute(
-        'ALTER TABLE projects ADD COLUMN payments TEXT DEFAULT "[]"',
+      await _addColumnIfNotExists(
+        db,
+        'projects',
+        'payments',
+        'TEXT DEFAULT "[]"',
       );
-      await db.execute(
-        'ALTER TABLE projects ADD COLUMN projectNotes TEXT DEFAULT "[]"',
+      await _addColumnIfNotExists(
+        db,
+        'projects',
+        'projectNotes',
+        'TEXT DEFAULT "[]"',
       );
       // Add new column to clients table
-      await db.execute(
-        'ALTER TABLE clients ADD COLUMN projectIds TEXT DEFAULT "[]"',
+      await _addColumnIfNotExists(
+        db,
+        'clients',
+        'projectIds',
+        'TEXT DEFAULT "[]"',
       );
+    }
+  }
+
+  Future<void> _addColumnIfNotExists(
+    Database db,
+    String tableName,
+    String columnName,
+    String columnDefinition,
+  ) async {
+    try {
+      // Check if column exists by querying table info
+      final result = await db.rawQuery("PRAGMA table_info($tableName)");
+      final columnExists = result.any((column) => column['name'] == columnName);
+
+      if (!columnExists) {
+        await db.execute(
+          'ALTER TABLE $tableName ADD COLUMN $columnName $columnDefinition',
+        );
+      }
+    } catch (e) {
+      // If there's an error checking, try to add the column anyway
+      // This handles cases where the table might not exist yet
+      try {
+        await db.execute(
+          'ALTER TABLE $tableName ADD COLUMN $columnName $columnDefinition',
+        );
+      } catch (addError) {
+        // Column might already exist, ignore the error
+        print(
+          'Column $columnName might already exist in $tableName: $addError',
+        );
+      }
     }
   }
 
