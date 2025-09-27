@@ -415,7 +415,9 @@ class Client {
       'company': company,
       'notes': notes,
       'createdAt': createdAt.toIso8601String(),
-      'projectIds': projectIds,
+      'projectIds': projectIds.join(
+        ',',
+      ), // Convert List to comma-separated string
     };
   }
 
@@ -428,7 +430,10 @@ class Client {
       company: json['company'],
       notes: json['notes'],
       createdAt: DateTime.parse(json['createdAt']),
-      projectIds: List<String>.from(json['projectIds'] ?? []),
+      projectIds:
+          json['projectIds'] != null && json['projectIds'].toString().isNotEmpty
+          ? json['projectIds'].toString().split(',')
+          : <String>[],
     );
   }
 }

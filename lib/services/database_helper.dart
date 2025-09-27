@@ -104,7 +104,8 @@ class DatabaseHelper {
         phone TEXT,
         company TEXT,
         notes TEXT,
-        createdAt TEXT NOT NULL
+        createdAt TEXT NOT NULL,
+        projectIds TEXT DEFAULT '[]'
       )
     ''');
 
@@ -131,6 +132,10 @@ class DatabaseHelper {
       );
       await db.execute(
         'ALTER TABLE projects ADD COLUMN projectNotes TEXT DEFAULT "[]"',
+      );
+      // Add new column to clients table
+      await db.execute(
+        'ALTER TABLE clients ADD COLUMN projectIds TEXT DEFAULT "[]"',
       );
     }
   }
