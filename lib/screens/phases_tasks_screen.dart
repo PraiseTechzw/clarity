@@ -3,9 +3,9 @@ import 'package:provider/provider.dart';
 import '../models/project.dart';
 import '../providers/project_provider.dart';
 import '../widgets/phase_card.dart';
-import '../widgets/task_item.dart';
 import 'add_phase_screen.dart';
 import 'add_task_screen.dart';
+import 'edit_phase_screen.dart';
 
 class PhasesTasksScreen extends StatefulWidget {
   final Project project;
@@ -27,9 +27,6 @@ class _PhasesTasksScreenState extends State<PhasesTasksScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     return Scaffold(
       body: _currentProject.phases.isEmpty
           ? _buildEmptyState()
@@ -137,9 +134,23 @@ class _PhasesTasksScreenState extends State<PhasesTasksScreen> {
   }
 
   void _editPhase(Phase phase) {
-    // TODO: Implement edit phase functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Edit phase functionality coming soon!')),
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => EditPhaseScreen(
+          phase: phase,
+          onPhaseUpdated: (updatedPhase) {
+            setState(() {
+              final phaseIndex = _currentProject.phases.indexWhere(
+                (p) => p.id == phase.id,
+              );
+              final updatedPhases = List<Phase>.from(_currentProject.phases);
+              updatedPhases[phaseIndex] = updatedPhase;
+              _currentProject = _currentProject.copyWith(phases: updatedPhases);
+            });
+            _updateProject();
+          },
+        ),
+      ),
     );
   }
 

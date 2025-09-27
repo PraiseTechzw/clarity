@@ -54,6 +54,9 @@ dependencies:
   
   # Notifications
   flutter_local_notifications: ^17.2.3
+  
+  # Beautiful Bottom Navigation
+  convex_bottom_bar: ^3.2.0
 
 dev_dependencies:
   flutter_test:

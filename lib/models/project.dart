@@ -276,6 +276,7 @@ class Payment {
   final DateTime date;
   final String? notes;
   final String? reference;
+  final PaymentStatus status;
 
   Payment({
     required this.id,
@@ -283,7 +284,26 @@ class Payment {
     required this.date,
     this.notes,
     this.reference,
+    this.status = PaymentStatus.paid,
   });
+
+  Payment copyWith({
+    String? id,
+    double? amount,
+    DateTime? date,
+    String? notes,
+    String? reference,
+    PaymentStatus? status,
+  }) {
+    return Payment(
+      id: id ?? this.id,
+      amount: amount ?? this.amount,
+      date: date ?? this.date,
+      notes: notes ?? this.notes,
+      reference: reference ?? this.reference,
+      status: status ?? this.status,
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -292,6 +312,7 @@ class Payment {
       'date': date.toIso8601String(),
       'notes': notes,
       'reference': reference,
+      'status': status.name,
     };
   }
 
@@ -302,6 +323,10 @@ class Payment {
       date: DateTime.parse(json['date']),
       notes: json['notes'],
       reference: json['reference'],
+      status: PaymentStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+        orElse: () => PaymentStatus.paid,
+      ),
     );
   }
 }
@@ -320,6 +345,22 @@ class Note {
     required this.createdAt,
     this.updatedAt,
   });
+
+  Note copyWith({
+    String? id,
+    String? title,
+    String? content,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return Note(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {

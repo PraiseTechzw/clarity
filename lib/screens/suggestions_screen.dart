@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/project_provider.dart';
+import 'project_details_screen.dart';
 import '../models/project.dart';
 
 class SuggestionsScreen extends StatelessWidget {
@@ -28,7 +29,8 @@ class SuggestionsScreen extends StatelessWidget {
 
           final overdueProjects = provider.overdueProjects;
           final highPriorityProjects = provider.highPriorityProjects;
-          final projectsWithOutstandingPayments = provider.projectsWithOutstandingPayments;
+          final projectsWithOutstandingPayments =
+              provider.projectsWithOutstandingPayments;
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
@@ -37,34 +39,64 @@ class SuggestionsScreen extends StatelessWidget {
               children: [
                 // Top Priority Tasks
                 if (highPriorityProjects.isNotEmpty) ...[
-                  _buildSectionHeader(context, 'High Priority Projects', Icons.priority_high),
+                  _buildSectionHeader(
+                    context,
+                    'High Priority Projects',
+                    Icons.priority_high,
+                  ),
                   const SizedBox(height: 8),
-                  ...highPriorityProjects.map((project) => 
-                    _buildSuggestionCard(context, project, 'High Priority', Colors.red)),
+                  ...highPriorityProjects.map(
+                    (project) => _buildSuggestionCard(
+                      context,
+                      project,
+                      'High Priority',
+                      Colors.red,
+                    ),
+                  ),
                   const SizedBox(height: 24),
                 ],
 
                 // Overdue Tasks
                 if (overdueProjects.isNotEmpty) ...[
-                  _buildSectionHeader(context, 'Overdue Projects', Icons.warning),
+                  _buildSectionHeader(
+                    context,
+                    'Overdue Projects',
+                    Icons.warning,
+                  ),
                   const SizedBox(height: 8),
-                  ...overdueProjects.map((project) => 
-                    _buildSuggestionCard(context, project, 'Overdue', Colors.red)),
+                  ...overdueProjects.map(
+                    (project) => _buildSuggestionCard(
+                      context,
+                      project,
+                      'Overdue',
+                      Colors.red,
+                    ),
+                  ),
                   const SizedBox(height: 24),
                 ],
 
                 // Outstanding Payments
                 if (projectsWithOutstandingPayments.isNotEmpty) ...[
-                  _buildSectionHeader(context, 'Outstanding Payments', Icons.payment),
+                  _buildSectionHeader(
+                    context,
+                    'Outstanding Payments',
+                    Icons.payment,
+                  ),
                   const SizedBox(height: 8),
-                  ...projectsWithOutstandingPayments.map((project) => 
-                    _buildSuggestionCard(context, project, 'Payment Due', Colors.orange)),
+                  ...projectsWithOutstandingPayments.map(
+                    (project) => _buildSuggestionCard(
+                      context,
+                      project,
+                      'Payment Due',
+                      Colors.orange,
+                    ),
+                  ),
                   const SizedBox(height: 24),
                 ],
 
                 // All Good Message
-                if (overdueProjects.isEmpty && 
-                    highPriorityProjects.isEmpty && 
+                if (overdueProjects.isEmpty &&
+                    highPriorityProjects.isEmpty &&
                     projectsWithOutstandingPayments.isEmpty)
                   _buildAllGoodMessage(context),
               ],
@@ -75,22 +107,31 @@ class SuggestionsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title, IconData icon) {
+  Widget _buildSectionHeader(
+    BuildContext context,
+    String title,
+    IconData icon,
+  ) {
     return Row(
       children: [
         Icon(icon, color: Theme.of(context).colorScheme.primary),
         const SizedBox(width: 8),
         Text(
           title,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
       ],
     );
   }
 
-  Widget _buildSuggestionCard(BuildContext context, Project project, String type, Color color) {
+  Widget _buildSuggestionCard(
+    BuildContext context,
+    Project project,
+    String type,
+    Color color,
+  ) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
@@ -100,11 +141,7 @@ class SuggestionsScreen extends StatelessWidget {
             color: color.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            Icons.lightbulb,
-            color: color,
-            size: 20,
-          ),
+          child: Icon(Icons.lightbulb, color: color, size: 20),
         ),
         title: Text(project.name),
         subtitle: Column(
@@ -114,10 +151,7 @@ class SuggestionsScreen extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               type,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(color: color, fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -127,9 +161,10 @@ class SuggestionsScreen extends StatelessWidget {
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
         onTap: () {
-          // TODO: Navigate to project details
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Opening ${project.name}')),
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => ProjectDetailsScreen(project: project),
+            ),
           );
         },
       ),
@@ -141,11 +176,7 @@ class SuggestionsScreen extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.check_circle,
-            size: 80,
-            color: Colors.green,
-          ),
+          Icon(Icons.check_circle, size: 80, color: Colors.green),
           const SizedBox(height: 16),
           Text(
             'All Good!',

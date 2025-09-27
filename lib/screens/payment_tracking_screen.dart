@@ -5,6 +5,7 @@ import '../providers/project_provider.dart';
 import '../widgets/payment_summary_card.dart';
 import '../widgets/payment_item.dart';
 import 'add_payment_screen.dart';
+import 'edit_payment_screen.dart';
 
 class PaymentTrackingScreen extends StatefulWidget {
   final Project project;
@@ -26,9 +27,6 @@ class _PaymentTrackingScreenState extends State<PaymentTrackingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     return Scaffold(
       body: Column(
         children: [
@@ -118,9 +116,27 @@ class _PaymentTrackingScreenState extends State<PaymentTrackingScreen> {
   }
 
   void _editPayment(Payment payment) {
-    // TODO: Implement edit payment functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Edit payment functionality coming soon!')),
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => EditPaymentScreen(
+          payment: payment,
+          onPaymentUpdated: (updatedPayment) {
+            setState(() {
+              final paymentIndex = _currentProject.payments.indexWhere(
+                (p) => p.id == payment.id,
+              );
+              final updatedPayments = List<Payment>.from(
+                _currentProject.payments,
+              );
+              updatedPayments[paymentIndex] = updatedPayment;
+              _currentProject = _currentProject.copyWith(
+                payments: updatedPayments,
+              );
+            });
+            _updateProject();
+          },
+        ),
+      ),
     );
   }
 

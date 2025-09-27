@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../models/project.dart';
 import '../providers/project_provider.dart';
 
@@ -21,6 +22,15 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
   DateTime _selectedDeadline = DateTime.now().add(const Duration(days: 30));
   Priority _selectedPriority = Priority.medium;
   bool _isLoading = false;
+  List<Client> _clients = [];
+  Client? _selectedClient;
+  bool _isNewClient = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadClients();
+  }
 
   @override
   void dispose() {
@@ -31,23 +41,42 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
     super.dispose();
   }
 
+  void _loadClients() {
+    final provider = context.read<ProjectProvider>();
+    setState(() {
+      _clients = provider.clients;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('New Project'),
+        title: Row(
+          children: [
+            Icon(
+              Icons.add_circle_outline,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            const Text('New Project'),
+          ],
+        ),
         actions: [
-          TextButton(
+          TextButton.icon(
             onPressed: _isLoading ? null : _saveProject,
-            child: _isLoading
+            icon: _isLoading
                 ? const SizedBox(
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Save'),
+                : const Icon(Icons.save),
+            label: _isLoading
+                ? const Text('Creating...')
+                : const Text('Create'),
           ),
         ],
       ),
@@ -73,20 +102,108 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Client Name
-            TextFormField(
-              controller: _clientController,
-              decoration: const InputDecoration(
-                labelText: 'Client Name *',
-                hintText: 'Enter client name',
-                border: OutlineInputBorder(),
+            // Client Selection
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.person,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Client Selection',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: RadioListTile<bool>(
+                            title: const Text('Existing Client'),
+                            value: false,
+                            groupValue: _isNewClient,
+                            onChanged: (value) {
+                              setState(() {
+                                _isNewClient = value!;
+                                if (!_isNewClient) {
+                                  _clientController.clear();
+                                }
+                              });
+                            },
+                          ),
+                        ),
+                        Expanded(
+                          child: RadioListTile<bool>(
+                            title: const Text('New Client'),
+                            value: true,
+                            groupValue: _isNewClient,
+                            onChanged: (value) {
+                              setState(() {
+                                _isNewClient = value!;
+                                if (_isNewClient) {
+                                  _selectedClient = null;
+                                }
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    if (!_isNewClient) ...[
+                      DropdownButtonFormField<Client>(
+                        value: _selectedClient,
+                        decoration: const InputDecoration(
+                          labelText: 'Select Client *',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: _clients.map((client) {
+                          return DropdownMenuItem(
+                            value: client,
+                            child: Text(client.name),
+                          );
+                        }).toList(),
+                        onChanged: (client) {
+                          setState(() {
+                            _selectedClient = client;
+                          });
+                        },
+                        validator: (value) {
+                          if (!_isNewClient && value == null) {
+                            return 'Please select a client';
+                          }
+                          return null;
+                        },
+                      ),
+                    ] else ...[
+                      TextFormField(
+                        controller: _clientController,
+                        decoration: const InputDecoration(
+                          labelText: 'New Client Name *',
+                          hintText: 'Enter client name',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (value) {
+                          if (_isNewClient &&
+                              (value == null || value.trim().isEmpty)) {
+                            return 'Client name is required';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
+                  ],
+                ),
               ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Client name is required';
-                }
-                return null;
-              },
             ),
             const SizedBox(height: 16),
 
@@ -119,84 +236,229 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
             const SizedBox(height: 16),
 
             // Deadline
-            InkWell(
-              onTap: _selectDeadline,
-              child: InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: 'Deadline *',
-                  border: OutlineInputBorder(),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '${_selectedDeadline.day}/${_selectedDeadline.month}/${_selectedDeadline.year}',
-                      style: theme.textTheme.bodyLarge,
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Project Timeline',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ],
                     ),
-                    const Icon(Icons.calendar_today),
+                    const SizedBox(height: 16),
+                    InkWell(
+                      onTap: _selectDeadline,
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Project Deadline *',
+                          border: OutlineInputBorder(),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  DateFormat(
+                                    'EEEE, MMMM d, yyyy',
+                                  ).format(_selectedDeadline),
+                                  style: theme.textTheme.bodyLarge,
+                                ),
+                                Text(
+                                  '${_selectedDeadline.difference(DateTime.now()).inDays} days from now',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color:
+                                        _selectedDeadline.isBefore(
+                                          DateTime.now().add(
+                                            const Duration(days: 7),
+                                          ),
+                                        )
+                                        ? Colors.red
+                                        : _selectedDeadline.isBefore(
+                                            DateTime.now().add(
+                                              const Duration(days: 30),
+                                            ),
+                                          )
+                                        ? Colors.orange
+                                        : Colors.green,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Icon(Icons.calendar_today),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 16),
 
-            // Priority
-            DropdownButtonFormField<Priority>(
-              value: _selectedPriority,
-              decoration: const InputDecoration(
-                labelText: 'Priority *',
-                border: OutlineInputBorder(),
-              ),
-              items: Priority.values.map((priority) {
-                return DropdownMenuItem(
-                  value: priority,
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 12,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: _getPriorityColor(priority),
-                          shape: BoxShape.circle,
+            // Priority and Project Type
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.flag,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Project Priority & Type',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<Priority>(
+                      value: _selectedPriority,
+                      decoration: const InputDecoration(
+                        labelText: 'Priority Level *',
+                        border: OutlineInputBorder(),
                       ),
-                      const SizedBox(width: 8),
-                      Text(priority.name.toUpperCase()),
-                    ],
-                  ),
-                );
-              }).toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    _selectedPriority = value;
-                  });
-                }
-              },
+                      items: Priority.values.map((priority) {
+                        return DropdownMenuItem(
+                          value: priority,
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: _getPriorityColor(priority),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(priority.name.toUpperCase()),
+                              const SizedBox(width: 8),
+                              Text(
+                                _getPriorityDescription(priority),
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _selectedPriority = value;
+                          });
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 16),
 
-            // Notes
-            TextFormField(
-              controller: _notesController,
-              decoration: const InputDecoration(
-                labelText: 'Notes',
-                hintText: 'Optional project notes',
-                border: OutlineInputBorder(),
+            // Notes and Additional Information
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.note,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Project Details',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _notesController,
+                      decoration: const InputDecoration(
+                        labelText: 'Project Notes',
+                        hintText:
+                            'Add any additional project details, requirements, or notes...',
+                        border: OutlineInputBorder(),
+                        alignLabelWithHint: true,
+                      ),
+                      maxLines: 4,
+                      textAlignVertical: TextAlignVertical.top,
+                    ),
+                  ],
+                ),
               ),
-              maxLines: 3,
             ),
             const SizedBox(height: 32),
 
             // Save Button
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _saveProject,
-                child: _isLoading
-                    ? const CircularProgressIndicator()
-                    : const Text('Create Project'),
+            Card(
+              elevation: 4,
+              child: Container(
+                width: double.infinity,
+                height: 56,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  gradient: LinearGradient(
+                    colors: [
+                      Theme.of(context).colorScheme.primary,
+                      Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                    ],
+                  ),
+                ),
+                child: ElevatedButton.icon(
+                  onPressed: _isLoading ? null : _saveProject,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  icon: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                      : const Icon(Icons.rocket_launch, color: Colors.white),
+                  label: Text(
+                    _isLoading ? 'Creating Project...' : 'Create Project',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
               ),
             ),
           ],
@@ -231,6 +493,17 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
     }
   }
 
+  String _getPriorityDescription(Priority priority) {
+    switch (priority) {
+      case Priority.high:
+        return '(Urgent - Complete ASAP)';
+      case Priority.medium:
+        return '(Normal - Standard timeline)';
+      case Priority.low:
+        return '(Low - Flexible timeline)';
+    }
+  }
+
   Future<void> _saveProject() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -241,10 +514,28 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
     });
 
     try {
+      String clientName;
+
+      // Handle client creation if it's a new client
+      if (_isNewClient) {
+        clientName = _clientController.text.trim();
+
+        // Create new client
+        final newClient = Client(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          name: clientName,
+          createdAt: DateTime.now(),
+        );
+
+        await context.read<ProjectProvider>().addClient(newClient);
+      } else {
+        clientName = _selectedClient?.name ?? '';
+      }
+
       final project = Project(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         name: _nameController.text.trim(),
-        clientName: _clientController.text.trim(),
+        clientName: clientName,
         budget: double.parse(_budgetController.text),
         deadline: _selectedDeadline,
         priority: _selectedPriority,
@@ -259,9 +550,22 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Project created successfully!'),
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _isNewClient
+                        ? 'Project and client created successfully!'
+                        : 'Project created successfully!',
+                  ),
+                ),
+              ],
+            ),
             backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -269,8 +573,15 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error creating project: $e'),
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(child: Text('Error creating project: $e')),
+              ],
+            ),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
       }

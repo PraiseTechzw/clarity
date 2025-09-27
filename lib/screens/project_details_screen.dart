@@ -6,14 +6,12 @@ import '../widgets/project_header.dart';
 import 'phases_tasks_screen.dart';
 import 'payment_tracking_screen.dart';
 import 'project_notes_screen.dart';
+import 'edit_project_screen.dart';
 
 class ProjectDetailsScreen extends StatefulWidget {
   final Project project;
 
-  const ProjectDetailsScreen({
-    super.key,
-    required this.project,
-  });
+  const ProjectDetailsScreen({super.key, required this.project});
 
   @override
   State<ProjectDetailsScreen> createState() => _ProjectDetailsScreenState();
@@ -39,7 +37,6 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
@@ -95,18 +92,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
                 TabBar(
                   controller: _tabController,
                   tabs: const [
-                    Tab(
-                      icon: Icon(Icons.assignment),
-                      text: 'Phases & Tasks',
-                    ),
-                    Tab(
-                      icon: Icon(Icons.payment),
-                      text: 'Payments',
-                    ),
-                    Tab(
-                      icon: Icon(Icons.note),
-                      text: 'Notes',
-                    ),
+                    Tab(icon: Icon(Icons.assignment), text: 'Phases & Tasks'),
+                    Tab(icon: Icon(Icons.payment), text: 'Payments'),
+                    Tab(icon: Icon(Icons.note), text: 'Notes'),
                   ],
                 ),
               ),
@@ -140,16 +128,27 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
   }
 
   void _editProject() {
-    // TODO: Implement edit project functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Edit project functionality coming soon!')),
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => EditProjectScreen(
+          project: _currentProject,
+          onProjectUpdated: (updatedProject) {
+            setState(() {
+              _currentProject = updatedProject;
+            });
+            context.read<ProjectProvider>().updateProject(updatedProject);
+          },
+        ),
+      ),
     );
   }
 
   void _duplicateProject() {
     // TODO: Implement duplicate project functionality
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Duplicate project functionality coming soon!')),
+      const SnackBar(
+        content: Text('Duplicate project functionality coming soon!'),
+      ),
     );
   }
 
@@ -158,7 +157,9 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Project'),
-        content: Text('Are you sure you want to delete "${_currentProject.name}"? This action cannot be undone.'),
+        content: Text(
+          'Are you sure you want to delete "${_currentProject.name}"? This action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -196,7 +197,11 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => _tabBar.preferredSize.height;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     return Container(
       color: Theme.of(context).scaffoldBackgroundColor,
       child: _tabBar,

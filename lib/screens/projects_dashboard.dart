@@ -6,6 +6,7 @@ import '../widgets/project_card.dart';
 import '../widgets/filter_bottom_sheet.dart';
 import 'new_project_screen.dart';
 import 'project_details_screen.dart';
+import 'notifications_screen.dart';
 
 class ProjectsDashboard extends StatefulWidget {
   const ProjectsDashboard({super.key});
@@ -26,6 +27,10 @@ class _ProjectsDashboardState extends State<ProjectsDashboard> {
       appBar: AppBar(
         title: const Text('Projects'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined),
+            onPressed: _navigateToNotifications,
+          ),
           IconButton(
             icon: const Icon(Icons.filter_list),
             onPressed: _showFilterBottomSheet,
@@ -226,6 +231,12 @@ class _ProjectsDashboardState extends State<ProjectsDashboard> {
     Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (context) => const NewProjectScreen()));
+  }
+
+  void _navigateToNotifications() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+    );
   }
 
   void _navigateToProjectDetails(Project project) {

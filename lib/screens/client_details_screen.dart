@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/project.dart';
 import '../widgets/project_card.dart';
+import 'project_details_screen.dart';
 
 class ClientDetailsScreen extends StatelessWidget {
   final Client client;
@@ -25,8 +26,6 @@ class ClientDetailsScreen extends StatelessWidget {
       0.0,
       (sum, project) => sum + project.outstandingBalance,
     );
-    final activeProjects = projects.where((p) => !p.isOverdue).length;
-    final overdueProjects = projects.where((p) => p.isOverdue).length;
 
     return Scaffold(
       body: NestedScrollView(
@@ -196,9 +195,11 @@ class ClientDetailsScreen extends StatelessWidget {
                     child: ProjectCard(
                       project: project,
                       onTap: () {
-                        // TODO: Navigate to project details
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Opening ${project.name}')),
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                ProjectDetailsScreen(project: project),
+                          ),
                         );
                       },
                     ),
