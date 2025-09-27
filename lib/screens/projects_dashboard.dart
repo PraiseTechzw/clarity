@@ -7,6 +7,7 @@ import '../widgets/filter_bottom_sheet.dart';
 import 'new_project_screen.dart';
 import 'project_details_screen.dart';
 import 'notifications_screen.dart';
+import 'search_screen.dart';
 
 class ProjectsDashboard extends StatefulWidget {
   const ProjectsDashboard({super.key});
@@ -44,9 +45,6 @@ class _ProjectsDashboardState extends State<ProjectsDashboard> {
                 // Quick Stats Section
                 _buildQuickStatsSection(provider),
 
-                // Search and Filter Section
-                _buildSearchAndFilterSection(),
-
                 // Projects List
                 if (filteredProjects.isEmpty)
                   _buildEmptyState()
@@ -66,22 +64,27 @@ class _ProjectsDashboardState extends State<ProjectsDashboard> {
       title: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(6),
             ),
             child: Icon(
               Icons.dashboard,
               color: Theme.of(context).colorScheme.primary,
-              size: 20,
+              size: 18,
             ),
           ),
-          const SizedBox(width: 12),
-          const Text('Projects Dashboard'),
+          const SizedBox(width: 8),
+          const Text('Projects'),
         ],
       ),
       actions: [
+        IconButton(
+          icon: const Icon(Icons.search),
+          onPressed: _navigateToSearch,
+          tooltip: 'Search',
+        ),
         IconButton(
           icon: const Icon(Icons.notifications_outlined),
           onPressed: _navigateToNotifications,
@@ -296,58 +299,6 @@ class _ProjectsDashboardState extends State<ProjectsDashboard> {
     );
   }
 
-  Widget _buildSearchAndFilterSection() {
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Column(
-          children: [
-            // Search Bar
-            Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
-                ),
-              ),
-              child: TextField(
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                  });
-                },
-                decoration: InputDecoration(
-                  hintText: 'Search projects...',
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            setState(() {
-                              _searchQuery = '';
-                            });
-                          },
-                        )
-                      : null,
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Active Filters
-            if (_hasActiveFilters()) _buildActiveFiltersChip(),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildProjectsList(List<Project> projects) {
     return SliverPadding(
       padding: const EdgeInsets.all(16),
@@ -456,32 +407,6 @@ class _ProjectsDashboardState extends State<ProjectsDashboard> {
     );
   }
 
-  Widget _buildActiveFiltersChip() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Wrap(
-        spacing: 8,
-        children: [
-          if (_selectedPriority != null)
-            Chip(
-              label: Text('Priority: ${_selectedPriority!.name}'),
-              onDeleted: () => setState(() => _selectedPriority = null),
-            ),
-          if (_selectedPaymentStatus != null)
-            Chip(
-              label: Text('Payment: ${_selectedPaymentStatus!.name}'),
-              onDeleted: () => setState(() => _selectedPaymentStatus = null),
-            ),
-          if (_selectedClient != null)
-            Chip(
-              label: Text('Client: $_selectedClient'),
-              onDeleted: () => setState(() => _selectedClient = null),
-            ),
-        ],
-      ),
-    );
-  }
-
   List<Project> _getFilteredProjects(List<Project> projects) {
     return projects.where((project) {
       // Search filter
@@ -542,6 +467,12 @@ class _ProjectsDashboardState extends State<ProjectsDashboard> {
     Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (context) => const NewProjectScreen()));
+  }
+
+  void _navigateToSearch() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const SearchScreen()));
   }
 
   void _navigateToNotifications() {

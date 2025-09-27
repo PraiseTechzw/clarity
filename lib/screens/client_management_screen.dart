@@ -5,6 +5,7 @@ import '../providers/project_provider.dart';
 import '../widgets/client_card.dart';
 import 'add_client_screen.dart';
 import 'client_details_screen.dart';
+import 'search_screen.dart';
 
 class ClientManagementScreen extends StatefulWidget {
   const ClientManagementScreen({super.key});
@@ -24,7 +25,8 @@ class _ClientManagementScreenState extends State<ClientManagementScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
-            onPressed: _showSearchDialog,
+            onPressed: _navigateToSearch,
+            tooltip: 'Search',
           ),
         ],
       ),
@@ -157,39 +159,10 @@ class _ClientManagementScreenState extends State<ClientManagementScreen> {
     }).toList();
   }
 
-  void _showSearchDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Search Clients'),
-        content: TextField(
-          decoration: const InputDecoration(
-            hintText: 'Search by name, email, or company',
-            border: OutlineInputBorder(),
-          ),
-          onChanged: (value) {
-            setState(() {
-              _searchQuery = value;
-            });
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _searchQuery = '';
-              });
-              Navigator.of(context).pop();
-            },
-            child: const Text('Clear'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
+  void _navigateToSearch() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const SearchScreen()));
   }
 
   void _navigateToAddClient() {
@@ -201,8 +174,7 @@ class _ClientManagementScreenState extends State<ClientManagementScreen> {
   void _navigateToClientDetails(Client client, List<Project> projects) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) =>
-            ClientDetailsScreen(client: client, projects: projects),
+        builder: (context) => ClientDetailsScreen(client: client),
       ),
     );
   }

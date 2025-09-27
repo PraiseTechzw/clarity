@@ -43,7 +43,9 @@ class ClientDetailsScreen extends StatelessWidget {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                            Theme.of(
+                              context,
+                            ).colorScheme.primary.withOpacity(0.1),
                             Theme.of(context).colorScheme.surface,
                           ],
                         ),
@@ -59,16 +61,17 @@ class ClientDetailsScreen extends StatelessWidget {
                                   children: [
                                     CircleAvatar(
                                       radius: 30,
-                                      backgroundColor: Theme.of(context)
-                                          .colorScheme
-                                          .primary
-                                          .withOpacity(0.1),
+                                      backgroundColor: Theme.of(
+                                        context,
+                                      ).colorScheme.primary.withOpacity(0.1),
                                       child: Text(
                                         client.name.isNotEmpty
                                             ? client.name[0].toUpperCase()
                                             : 'C',
                                         style: TextStyle(
-                                          color: Theme.of(context).colorScheme.primary,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
                                           fontSize: 24,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -77,21 +80,30 @@ class ClientDetailsScreen extends StatelessWidget {
                                     const SizedBox(width: 16),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             client.name,
-                                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .headlineSmall
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
                                           ),
                                           if (client.company != null) ...[
                                             const SizedBox(height: 4),
                                             Text(
                                               client.company!,
-                                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                              ),
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .titleMedium
+                                                  ?.copyWith(
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .onSurfaceVariant,
+                                                  ),
                                             ),
                                           ],
                                         ],
@@ -102,21 +114,29 @@ class ClientDetailsScreen extends StatelessWidget {
                                 const SizedBox(height: 16),
 
                                 // Contact Info
-                                if (client.email != null || client.phone != null) ...[
+                                if (client.email != null ||
+                                    client.phone != null) ...[
                                   Row(
                                     children: [
                                       if (client.email != null) ...[
                                         Icon(
                                           Icons.email,
                                           size: 16,
-                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
                                           client.email!,
-                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                          ),
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onSurfaceVariant,
+                                              ),
                                         ),
                                         const SizedBox(width: 16),
                                       ],
@@ -124,14 +144,21 @@ class ClientDetailsScreen extends StatelessWidget {
                                         Icon(
                                           Icons.phone,
                                           size: 16,
-                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
                                           client.phone!,
-                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                          ),
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onSurfaceVariant,
+                                              ),
                                         ),
                                       ],
                                     ],
@@ -199,7 +226,8 @@ class ClientDetailsScreen extends StatelessWidget {
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => ProjectDetailsScreen(project: project),
+                                builder: (context) =>
+                                    ProjectDetailsScreen(project: project),
                               ),
                             );
                           },
@@ -225,17 +253,11 @@ class ClientDetailsScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: color.withOpacity(0.2),
-        ),
+        border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Column(
         children: [
-          Icon(
-            icon,
-            size: 20,
-            color: color,
-          ),
+          Icon(icon, size: 20, color: color),
           const SizedBox(height: 4),
           Text(
             value,
