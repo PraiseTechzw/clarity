@@ -103,7 +103,9 @@ class PaymentSummaryCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 LinearProgressIndicator(
-                  value: project.totalPaid / project.budget,
+                  value: project.budget > 0
+                      ? (project.totalPaid / project.budget).clamp(0.0, 1.0)
+                      : 0.0,
                   backgroundColor: colorScheme.surfaceVariant,
                   valueColor: AlwaysStoppedAnimation<Color>(
                     _getProgressColor(),

@@ -201,11 +201,22 @@ class DatabaseHelper {
 
     // Insert phases
     for (final phase in project.phases) {
-      await db.insert('phases', {...phase.toJson(), 'projectId': project.id});
+      // Create phase data without tasks (tasks are stored separately)
+      final phaseData = {
+        'id': phase.id,
+        'name': phase.name,
+        'description': phase.description,
+        'dueDate': phase.dueDate?.toIso8601String(),
+        'projectId': project.id,
+      };
+      await db.insert('phases', phaseData);
 
       // Insert tasks for each phase
       for (final task in phase.tasks) {
-        await db.insert('tasks', {...task.toJson(), 'phaseId': phase.id});
+        await db.insert('tasks', {
+          ...task.toJson(),
+          'phaseId': phase.id,
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
       }
     }
 
@@ -370,15 +381,37 @@ class DatabaseHelper {
   Future<int> updateProject(Project project) async {
     final db = await database;
 
+    // Create a simplified project data for database update
+    final projectData = {
+      'id': project.id,
+      'name': project.name,
+      'clientName': project.clientName,
+      'budget': project.budget,
+      'deadline': project.deadline.toIso8601String(),
+      'priority': project.priority.name,
+      'notes': project.notes,
+      'createdAt': project.createdAt.toIso8601String(),
+      'phases': '[]', // These are handled separately
+      'payments': '[]',
+      'projectNotes': '[]',
+    };
+
     // Update project
     int result = await db.update(
       'projects',
-      project.toJson(),
+      projectData,
       where: 'id = ?',
       whereArgs: [project.id],
     );
 
-    // Delete existing phases and tasks
+    // Delete existing tasks first (to avoid foreign key constraints)
+    await db.delete(
+      'tasks',
+      where: 'phaseId IN (SELECT id FROM phases WHERE projectId = ?)',
+      whereArgs: [project.id],
+    );
+
+    // Delete existing phases, payments, and notes
     await db.delete('phases', where: 'projectId = ?', whereArgs: [project.id]);
     await db.delete(
       'payments',
@@ -389,10 +422,21 @@ class DatabaseHelper {
 
     // Re-insert phases and tasks
     for (final phase in project.phases) {
-      await db.insert('phases', {...phase.toJson(), 'projectId': project.id});
+      // Create phase data without tasks (tasks are stored separately)
+      final phaseData = {
+        'id': phase.id,
+        'name': phase.name,
+        'description': phase.description,
+        'dueDate': phase.dueDate?.toIso8601String(),
+        'projectId': project.id,
+      };
+      await db.insert('phases', phaseData);
 
       for (final task in phase.tasks) {
-        await db.insert('tasks', {...task.toJson(), 'phaseId': phase.id});
+        await db.insert('tasks', {
+          ...task.toJson(),
+          'phaseId': phase.id,
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
       }
     }
 

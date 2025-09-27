@@ -251,7 +251,9 @@ class Task {
       'title': title,
       'description': description,
       'dueDate': dueDate?.toIso8601String(),
-      'isCompleted': isCompleted,
+      'isCompleted': isCompleted
+          ? 1
+          : 0, // Convert boolean to integer for SQLite
       'completedAt': completedAt?.toIso8601String(),
     };
   }
@@ -262,7 +264,8 @@ class Task {
       title: json['title'],
       description: json['description'],
       dueDate: json['dueDate'] != null ? DateTime.parse(json['dueDate']) : null,
-      isCompleted: json['isCompleted'] ?? false,
+      isCompleted:
+          (json['isCompleted'] ?? 0) == 1, // Convert integer back to boolean
       completedAt: json['completedAt'] != null
           ? DateTime.parse(json['completedAt'])
           : null,

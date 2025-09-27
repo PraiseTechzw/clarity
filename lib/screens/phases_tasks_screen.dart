@@ -50,6 +50,7 @@ class _PhasesTasksScreenState extends State<PhasesTasksScreen> {
               },
             ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: "add_phase_fab",
         onPressed: _navigateToAddPhase,
         icon: const Icon(Icons.add),
         label: const Text('Add Phase'),

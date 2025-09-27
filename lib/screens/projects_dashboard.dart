@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../providers/project_provider.dart';
 import '../models/project.dart';
 import '../widgets/project_card.dart';
@@ -8,7 +7,6 @@ import '../widgets/filter_bottom_sheet.dart';
 import 'new_project_screen.dart';
 import 'project_details_screen.dart';
 import 'notifications_screen.dart';
-import 'analytics_dashboard.dart';
 
 class ProjectsDashboard extends StatefulWidget {
   const ProjectsDashboard({super.key});
@@ -26,123 +24,434 @@ class _ProjectsDashboardState extends State<ProjectsDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Projects'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: _navigateToNotifications,
-          ),
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: _showFilterBottomSheet,
-          ),
-        ],
-      ),
+      appBar: _buildAppBar(context),
       body: Consumer<ProjectProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return _buildLoadingState();
           }
 
           if (provider.error != null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: Theme.of(context).colorScheme.error,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Error: ${provider.error}',
-                    style: Theme.of(context).textTheme.bodyLarge,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      provider.clearError();
-                      provider.loadProjects();
-                    },
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            );
+            return _buildErrorState(provider);
           }
 
           final filteredProjects = _getFilteredProjects(provider.projects);
 
-          if (filteredProjects.isEmpty) {
-            return _buildEmptyState();
-          }
-
           return RefreshIndicator(
             onRefresh: () => provider.loadProjects(),
-            child: Column(
-              children: [
-                if (_hasActiveFilters()) _buildActiveFiltersChip(),
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: filteredProjects.length,
-                    itemBuilder: (context, index) {
-                      final project = filteredProjects[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: ProjectCard(
-                          project: project,
-                          onTap: () => _navigateToProjectDetails(project),
-                        ),
-                      );
-                    },
-                  ),
-                ),
+            child: CustomScrollView(
+              slivers: [
+                // Quick Stats Section
+                _buildQuickStatsSection(provider),
+
+                // Search and Filter Section
+                _buildSearchAndFilterSection(),
+
+                // Projects List
+                if (filteredProjects.isEmpty)
+                  _buildEmptyState()
+                else
+                  _buildProjectsList(filteredProjects),
               ],
             ),
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _navigateToNewProject,
-        icon: const Icon(Icons.add),
-        label: const Text('New Project'),
+      floatingActionButton: _buildFloatingActionButton(),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
+    return AppBar(
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              Icons.dashboard,
+              color: Theme.of(context).colorScheme.primary,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Text('Projects Dashboard'),
+        ],
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.notifications_outlined),
+          onPressed: _navigateToNotifications,
+          tooltip: 'Notifications',
+        ),
+        IconButton(
+          icon: const Icon(Icons.filter_list),
+          onPressed: _showFilterBottomSheet,
+          tooltip: 'Filter Projects',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(),
+          SizedBox(height: 16),
+          Text('Loading projects...'),
+        ],
       ),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildErrorState(ProjectProvider provider) {
     return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.errorContainer,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.error_outline,
+                size: 48,
+                color: Theme.of(context).colorScheme.error,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Oops! Something went wrong',
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              provider.error ?? 'An unexpected error occurred',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () {
+                    provider.clearError();
+                    provider.loadProjects();
+                  },
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  onPressed: _navigateToNewProject,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Create Project'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickStatsSection(ProjectProvider provider) {
+    return SliverToBoxAdapter(
+      child: Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Theme.of(context).colorScheme.primary,
+              Theme.of(context).colorScheme.primary.withOpacity(0.8),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.analytics, color: Colors.white, size: 24),
+                const SizedBox(width: 8),
+                Text(
+                  'Project Overview',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatCard(
+                    'Total Projects',
+                    provider.projects.length.toString(),
+                    Icons.folder,
+                    Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildStatCard(
+                    'Active',
+                    provider.projects
+                        .where((p) => !p.isOverdue)
+                        .length
+                        .toString(),
+                    Icons.play_circle,
+                    Colors.green.shade300,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatCard(
+                    'Overdue',
+                    provider.overdueProjects.length.toString(),
+                    Icons.warning,
+                    Colors.orange.shade300,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildStatCard(
+                    'High Priority',
+                    provider.highPriorityProjects.length.toString(),
+                    Icons.priority_high,
+                    Colors.red.shade300,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(8),
+      ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.folder_open_outlined,
-            size: 80,
-            color: Theme.of(context).colorScheme.outline,
-          ),
-          const SizedBox(height: 16),
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 4),
           Text(
-            'No projects yet',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Create your first project to get started',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            value,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: _navigateToNewProject,
-            icon: const Icon(Icons.add),
-            label: const Text('Create Project'),
+          Text(
+            title,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Colors.white.withOpacity(0.8),
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSearchAndFilterSection() {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          children: [
+            // Search Bar
+            Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                ),
+              ),
+              child: TextField(
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                  });
+                },
+                decoration: InputDecoration(
+                  hintText: 'Search projects...',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            setState(() {
+                              _searchQuery = '';
+                            });
+                          },
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Active Filters
+            if (_hasActiveFilters()) _buildActiveFiltersChip(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProjectsList(List<Project> projects) {
+    return SliverPadding(
+      padding: const EdgeInsets.all(16),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate((context, index) {
+          final project = projects[index];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: ProjectCard(
+              project: project,
+              onTap: () => _navigateToProjectDetails(project),
+            ),
+          );
+        }, childCount: projects.length),
+      ),
+    );
+  }
+
+  Widget _buildFloatingActionButton() {
+    return FloatingActionButton.extended(
+      heroTag: "new_project_fab",
+      onPressed: _navigateToNewProject,
+      icon: const Icon(Icons.add),
+      label: const Text('New Project'),
+      backgroundColor: Theme.of(context).colorScheme.primary,
+      foregroundColor: Colors.white,
+      elevation: 4,
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return SliverFillRemaining(
+      child: SingleChildScrollView(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(height: 40),
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primaryContainer.withOpacity(0.3),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.folder_open_outlined,
+                    size: 56,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'No projects found',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _hasActiveFilters()
+                      ? 'Try adjusting your filters or search terms'
+                      : 'Create your first project to get started',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    if (_hasActiveFilters())
+                      OutlinedButton.icon(
+                        onPressed: _clearAllFilters,
+                        icon: const Icon(Icons.clear_all),
+                        label: const Text('Clear Filters'),
+                      ),
+                    ElevatedButton.icon(
+                      onPressed: _navigateToNewProject,
+                      icon: const Icon(Icons.add),
+                      label: const Text('Create Project'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 40),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -239,6 +548,15 @@ class _ProjectsDashboardState extends State<ProjectsDashboard> {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (context) => const NotificationsScreen()),
     );
+  }
+
+  void _clearAllFilters() {
+    setState(() {
+      _searchQuery = '';
+      _selectedPriority = null;
+      _selectedPaymentStatus = null;
+      _selectedClient = null;
+    });
   }
 
   void _navigateToProjectDetails(Project project) {

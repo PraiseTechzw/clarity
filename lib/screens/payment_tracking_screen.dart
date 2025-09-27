@@ -28,16 +28,18 @@ class _PaymentTrackingScreenState extends State<PaymentTrackingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        children: [
-          // Payment Summary
-          PaymentSummaryCard(project: _currentProject),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Payment Summary
+            PaymentSummaryCard(project: _currentProject),
 
-          // Payments List
-          Expanded(
-            child: _currentProject.payments.isEmpty
+            // Payments List
+            _currentProject.payments.isEmpty
                 ? _buildEmptyState()
                 : ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(16),
                     itemCount: _currentProject.payments.length,
                     itemBuilder: (context, index) {
@@ -52,10 +54,11 @@ class _PaymentTrackingScreenState extends State<PaymentTrackingScreen> {
                       );
                     },
                   ),
-          ),
-        ],
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: "add_payment_fab",
         onPressed: _navigateToAddPayment,
         icon: const Icon(Icons.add),
         label: const Text('Add Payment'),

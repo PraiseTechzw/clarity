@@ -100,6 +100,7 @@ class _ClientManagementScreenState extends State<ClientManagementScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: "add_client_fab",
         onPressed: _navigateToAddClient,
         icon: const Icon(Icons.add),
         label: const Text('Add Client'),
