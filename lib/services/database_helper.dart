@@ -120,6 +120,21 @@ class DatabaseHelper {
     ''');
   }
 
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // Add new columns to projects table
+      await db.execute(
+        'ALTER TABLE projects ADD COLUMN phases TEXT DEFAULT "[]"',
+      );
+      await db.execute(
+        'ALTER TABLE projects ADD COLUMN payments TEXT DEFAULT "[]"',
+      );
+      await db.execute(
+        'ALTER TABLE projects ADD COLUMN projectNotes TEXT DEFAULT "[]"',
+      );
+    }
+  }
+
   // Project CRUD operations
   Future<String> insertProject(Project project) async {
     final db = await database;
