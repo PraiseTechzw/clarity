@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/project_provider.dart';
@@ -29,14 +30,29 @@ class _SyncInitializationWidgetState extends State<SyncInitializationWidget> {
   Future<void> _initializeProviders() async {
     if (!mounted) return;
 
-    final projectProvider = Provider.of<ProjectProvider>(
-      context,
-      listen: false,
-    );
-    final syncProvider = Provider.of<SyncProvider>(context, listen: false);
+    try {
+      final projectProvider = Provider.of<ProjectProvider>(
+        context,
+        listen: false,
+      );
+      final syncProvider = Provider.of<SyncProvider>(context, listen: false);
 
-    // Initialize project provider with sync provider
-    await projectProvider.initializeWithSync(syncProvider);
+      // Initialize project provider with sync provider with timeout
+      await projectProvider.initializeWithSync(syncProvider).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          // Continue even if sync initialization times out
+          if (kDebugMode) {
+            print('Sync initialization timed out, continuing...');
+          }
+        },
+      );
+    } catch (e) {
+      // Continue even if there's an error
+      if (kDebugMode) {
+        print('Error during sync initialization: $e');
+      }
+    }
 
     if (mounted) {
       setState(() {
@@ -53,7 +69,7 @@ class _SyncInitializationWidgetState extends State<SyncInitializationWidget> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SyncAnimationWidget(
+              const SyncAnimationWidget(
                 isSyncing: true,
                 status: 'Initializing sync...',
                 size: 48,

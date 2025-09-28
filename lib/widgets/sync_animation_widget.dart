@@ -37,7 +37,6 @@ class _SyncAnimationWidgetState extends State<SyncAnimationWidget>
   late Animation<double> _rotationAnimation;
   late Animation<double> _pulseAnimation;
   late Animation<double> _fadeAnimation;
-  late Animation<double> _progressAnimation;
 
   @override
   void initState() {
@@ -78,9 +77,6 @@ class _SyncAnimationWidgetState extends State<SyncAnimationWidget>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _progressAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _progressController, curve: Curves.easeInOut),
-    );
   }
 
   @override
@@ -93,13 +89,25 @@ class _SyncAnimationWidgetState extends State<SyncAnimationWidget>
 
   void _updateAnimations() {
     if (widget.isSyncing) {
-      _rotationController.repeat();
-      _pulseController.repeat(reverse: true);
-      _fadeController.forward();
+      if (!_rotationController.isAnimating) {
+        _rotationController.repeat();
+      }
+      if (!_pulseController.isAnimating) {
+        _pulseController.repeat(reverse: true);
+      }
+      if (!_fadeController.isAnimating) {
+        _fadeController.forward();
+      }
     } else {
-      _rotationController.stop();
-      _pulseController.stop();
-      _fadeController.reverse();
+      if (_rotationController.isAnimating) {
+        _rotationController.stop();
+      }
+      if (_pulseController.isAnimating) {
+        _pulseController.stop();
+      }
+      if (_fadeController.isAnimating) {
+        _fadeController.reverse();
+      }
     }
   }
 
@@ -194,22 +202,14 @@ class _SyncAnimationWidgetState extends State<SyncAnimationWidget>
 
     if (shouldAnimate) {
       iconWidget = AnimatedBuilder(
-        animation: _rotationAnimation,
+        animation: _rotationController,
         builder: (context, child) {
           return Transform.rotate(
             angle: _rotationAnimation.value * 2 * 3.14159,
-            child: AnimatedBuilder(
-              animation: _pulseAnimation,
-              builder: (context, child) {
-                return Transform.scale(
-                  scale: _pulseAnimation.value,
-                  child: child,
-                );
-              },
-              child: iconWidget,
-            ),
+            child: Transform.scale(scale: _pulseAnimation.value, child: child!),
           );
         },
+        child: iconWidget,
       );
     }
 

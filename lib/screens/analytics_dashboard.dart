@@ -45,7 +45,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: _buildEnhancedAppBar(context),
       body:
           Consumer4<
@@ -151,8 +151,8 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard>
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Theme.of(context).primaryColor,
-              Theme.of(context).primaryColor.withOpacity(0.8),
+              Theme.of(context).colorScheme.primary,
+              Theme.of(context).colorScheme.primary.withOpacity(0.8),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -164,33 +164,49 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard>
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.analytics, color: Colors.white, size: 24),
+            child: Icon(
+              Icons.analytics,
+              color: Theme.of(context).colorScheme.onPrimary,
+              size: 24,
+            ),
           ),
           const SizedBox(width: 12),
-          const Text(
-            'Analytics Dashboard',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
+          Expanded(
+            child: Text(
+              'Analytics Dashboard',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onPrimary,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.lightbulb_outline, color: Colors.white),
+          icon: Icon(
+            Icons.lightbulb_outline,
+            color: Theme.of(context).colorScheme.onPrimary,
+          ),
           onPressed: () => _navigateToSuggestions(context),
         ),
         IconButton(
-          icon: const Icon(Icons.share, color: Colors.white),
+          icon: Icon(
+            Icons.share,
+            color: Theme.of(context).colorScheme.onPrimary,
+          ),
           onPressed: () => _exportAnalytics(context),
         ),
         PopupMenuButton<String>(
-          icon: const Icon(Icons.more_vert, color: Colors.white),
+          icon: Icon(
+            Icons.more_vert,
+            color: Theme.of(context).colorScheme.onPrimary,
+          ),
           onSelected: (value) => _handleMenuAction(context, value),
           itemBuilder: (context) => [
             const PopupMenuItem(
@@ -226,15 +242,15 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard>
         children: [
           CircularProgressIndicator(
             valueColor: AlwaysStoppedAnimation<Color>(
-              Theme.of(context).primaryColor,
+              Theme.of(context).colorScheme.primary,
             ),
           ),
           const SizedBox(height: 16),
           Text(
             'Loading analytics...',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -248,15 +264,15 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard>
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Theme.of(context).primaryColor.withOpacity(0.1),
-            Theme.of(context).primaryColor.withOpacity(0.05),
+            Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            Theme.of(context).colorScheme.primary.withOpacity(0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).primaryColor.withOpacity(0.2),
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
         ),
       ),
       child: Column(
@@ -272,27 +288,27 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard>
                     'Project Analytics',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Theme.of(context).primaryColor,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Comprehensive insights into your project performance',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   Icons.trending_up,
-                  color: Theme.of(context).primaryColor,
+                  color: Theme.of(context).colorScheme.primary,
                   size: 24,
                 ),
               ),
@@ -327,8 +343,8 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard>
                           },
                           selectedColor: Theme.of(
                             context,
-                          ).primaryColor.withOpacity(0.2),
-                          checkmarkColor: Theme.of(context).primaryColor,
+                          ).colorScheme.primary.withOpacity(0.2),
+                          checkmarkColor: Theme.of(context).colorScheme.primary,
                         ),
                       );
                     }).toList(),
@@ -350,7 +366,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard>
                     _showComparison = value;
                   });
                 },
-                activeColor: Theme.of(context).primaryColor,
+                activeColor: Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(width: 8),
               Text(
@@ -395,7 +411,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard>
                 'Total Revenue',
                 '\$${metrics['totalRevenue'].toStringAsFixed(0)}',
                 Icons.account_balance_wallet,
-                Colors.green,
+                Theme.of(context).colorScheme.primary,
                 metrics['revenueGrowth'],
               ),
               _buildMetricCard(
@@ -403,7 +419,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard>
                 'Active Projects',
                 '${metrics['activeProjects']}',
                 Icons.folder_open,
-                Colors.blue,
+                Theme.of(context).colorScheme.secondary,
                 metrics['projectGrowth'],
               ),
               _buildMetricCard(
@@ -411,7 +427,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard>
                 'Completion Rate',
                 '${metrics['completionRate'].toStringAsFixed(1)}%',
                 Icons.check_circle,
-                Colors.orange,
+                Theme.of(context).colorScheme.tertiary,
                 metrics['completionGrowth'],
               ),
               _buildMetricCard(
@@ -419,7 +435,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard>
                 'Avg. Project Value',
                 '\$${metrics['avgProjectValue'].toStringAsFixed(0)}',
                 Icons.trending_up,
-                Colors.purple,
+                Theme.of(context).colorScheme.error,
                 metrics['valueGrowth'],
               ),
             ],
@@ -682,11 +698,11 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard>
   ) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -753,9 +769,9 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard>
             const SizedBox(height: 4),
             Text(
               title,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -899,7 +915,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard>
                           child: Text(
                             client['name'][0].toUpperCase(),
                             style: TextStyle(
-                              color: Theme.of(context).primaryColor,
+                              color: Theme.of(context).colorScheme.primary,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -927,7 +943,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard>
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: Theme.of(context).primaryColor,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
                         ),
                       ],
@@ -1074,16 +1090,19 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard>
           lineBarsData: [
             LineChartBarData(
               spots: data.asMap().entries.map((entry) {
-                return FlSpot(entry.key.toDouble(), entry.value['revenue']);
+                return FlSpot(
+                  entry.key.toDouble(),
+                  (entry.value['revenue'] as num).toDouble(),
+                );
               }).toList(),
               isCurved: true,
-              color: Theme.of(context).primaryColor,
+              color: Theme.of(context).colorScheme.primary,
               barWidth: 3,
               isStrokeCapRound: true,
               dotData: FlDotData(show: true),
               belowBarData: BarAreaData(
                 show: true,
-                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
               ),
             ),
           ],
@@ -1109,7 +1128,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard>
           sections: statusData.map((data) {
             return PieChartSectionData(
               color: data['color'],
-              value: data['value'],
+              value: (data['value'] as num).toDouble(),
               title: '${data['label']}\n${data['value']}',
               radius: 60,
               titleStyle: const TextStyle(
@@ -1143,7 +1162,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard>
           alignment: BarChartAlignment.spaceAround,
           maxY:
               monthlyData
-                  .map((e) => e['value'])
+                  .map((e) => (e['value'] as num).toDouble())
                   .reduce((a, b) => a > b ? a : b) +
               1000,
           barTouchData: BarTouchData(enabled: false),
@@ -1184,8 +1203,8 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard>
               x: entry.key,
               barRods: [
                 BarChartRodData(
-                  toY: entry.value['value'],
-                  color: Theme.of(context).primaryColor,
+                  toY: (entry.value['value'] as num).toDouble(),
+                  color: Theme.of(context).colorScheme.primary,
                   width: 20,
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(4),
@@ -1249,7 +1268,10 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard>
           lineBarsData: [
             LineChartBarData(
               spots: timelineData.asMap().entries.map((entry) {
-                return FlSpot(entry.key.toDouble(), entry.value['completion']);
+                return FlSpot(
+                  entry.key.toDouble(),
+                  (entry.value['completion'] as num).toDouble(),
+                );
               }).toList(),
               isCurved: true,
               color: Colors.green,
@@ -1284,7 +1306,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard>
           alignment: BarChartAlignment.spaceAround,
           maxY:
               clientData
-                  .map((e) => e['revenue'])
+                  .map((e) => (e['revenue'] as num).toDouble())
                   .reduce((a, b) => a > b ? a : b) +
               1000,
           barTouchData: BarTouchData(enabled: false),
@@ -1325,7 +1347,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard>
               x: entry.key,
               barRods: [
                 BarChartRodData(
-                  toY: entry.value['revenue'],
+                  toY: (entry.value['revenue'] as num).toDouble(),
                   color: Colors.blue,
                   width: 20,
                   borderRadius: const BorderRadius.vertical(
@@ -1507,34 +1529,35 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard>
   }
 
   List<Map<String, dynamic>> _getRevenueTrendData(ProjectProvider provider) {
-    // Mock data - would calculate from actual payment history
-    return [
-      {
-        'date': DateTime.now().subtract(const Duration(days: 6)),
-        'revenue': 5000,
-      },
-      {
-        'date': DateTime.now().subtract(const Duration(days: 5)),
-        'revenue': 7500,
-      },
-      {
-        'date': DateTime.now().subtract(const Duration(days: 4)),
-        'revenue': 6200,
-      },
-      {
-        'date': DateTime.now().subtract(const Duration(days: 3)),
-        'revenue': 8800,
-      },
-      {
-        'date': DateTime.now().subtract(const Duration(days: 2)),
-        'revenue': 7200,
-      },
-      {
-        'date': DateTime.now().subtract(const Duration(days: 1)),
-        'revenue': 9500,
-      },
-      {'date': DateTime.now(), 'revenue': 8200},
-    ];
+    final projects = provider.projects;
+    if (projects.isEmpty) return [];
+
+    // Group projects by creation date and calculate daily revenue
+    final Map<String, double> dailyRevenue = {};
+
+    for (final project in projects) {
+      final dateKey = _formatDate(project.createdAt);
+      dailyRevenue[dateKey] = (dailyRevenue[dateKey] ?? 0) + project.totalPaid;
+    }
+
+    // Convert to list and sort by date
+    final List<Map<String, dynamic>> revenueData = [];
+    final sortedDates = dailyRevenue.keys.toList()..sort();
+
+    for (final dateKey in sortedDates) {
+      revenueData.add({
+        'date': _parseDate(dateKey),
+        'revenue': dailyRevenue[dateKey]!,
+      });
+    }
+
+    // If no data, return empty list
+    if (revenueData.isEmpty) return [];
+
+    // Take last 7 days or all available data
+    return revenueData.length > 7
+        ? revenueData.sublist(revenueData.length - 7)
+        : revenueData;
   }
 
   List<Map<String, dynamic>> _getProjectStatusData(ProjectProvider provider) {
@@ -1560,29 +1583,70 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard>
   List<Map<String, dynamic>> _getMonthlyPerformanceData(
     ProjectProvider provider,
   ) {
-    // Mock data - would calculate from actual monthly data
-    return [
-      {'month': 'Jan', 'value': 12000},
-      {'month': 'Feb', 'value': 15000},
-      {'month': 'Mar', 'value': 18000},
-      {'month': 'Apr', 'value': 14000},
-      {'month': 'May', 'value': 22000},
-      {'month': 'Jun', 'value': 19000},
-    ];
+    final projects = provider.projects;
+    if (projects.isEmpty) return [];
+
+    // Group projects by month and calculate monthly revenue
+    final Map<String, double> monthlyRevenue = {};
+
+    for (final project in projects) {
+      final monthKey =
+          '${project.createdAt.year}-${project.createdAt.month.toString().padLeft(2, '0')}';
+      monthlyRevenue[monthKey] =
+          (monthlyRevenue[monthKey] ?? 0) + project.totalPaid;
+    }
+
+    // Convert to list and sort by month
+    final List<Map<String, dynamic>> monthlyData = [];
+    final sortedMonths = monthlyRevenue.keys.toList()..sort();
+
+    for (final monthKey in sortedMonths) {
+      final date = DateTime.parse('$monthKey-01');
+      monthlyData.add({
+        'month': _getMonthAbbreviation(date.month),
+        'value': monthlyRevenue[monthKey]!,
+      });
+    }
+
+    // Take last 6 months or all available data
+    return monthlyData.length > 6
+        ? monthlyData.sublist(monthlyData.length - 6)
+        : monthlyData;
   }
 
   List<Map<String, dynamic>> _getTaskCompletionTimeline(
     ProjectProvider provider,
   ) {
-    // Mock data - would calculate from actual task completion data
-    return [
-      {'date': 'Week 1', 'completion': 20},
-      {'date': 'Week 2', 'completion': 35},
-      {'date': 'Week 3', 'completion': 50},
-      {'date': 'Week 4', 'completion': 65},
-      {'date': 'Week 5', 'completion': 80},
-      {'date': 'Week 6', 'completion': 90},
-    ];
+    final projects = provider.projects;
+    if (projects.isEmpty) return [];
+
+    // Group projects by week and calculate average completion
+    final Map<String, List<double>> weeklyCompletion = {};
+
+    for (final project in projects) {
+      final weekKey = _getWeekKey(project.createdAt);
+      if (!weeklyCompletion.containsKey(weekKey)) {
+        weeklyCompletion[weekKey] = [];
+      }
+      weeklyCompletion[weekKey]!.add(project.progressPercentage);
+    }
+
+    // Convert to list and sort by week
+    final List<Map<String, dynamic>> timelineData = [];
+    final sortedWeeks = weeklyCompletion.keys.toList()..sort();
+
+    for (final weekKey in sortedWeeks) {
+      final completions = weeklyCompletion[weekKey]!;
+      final avgCompletion =
+          completions.reduce((a, b) => a + b) / completions.length;
+
+      timelineData.add({'date': weekKey, 'completion': avgCompletion});
+    }
+
+    // Take last 6 weeks or all available data
+    return timelineData.length > 6
+        ? timelineData.sublist(timelineData.length - 6)
+        : timelineData;
   }
 
   List<Map<String, dynamic>> _getClientRevenueData(ProjectProvider provider) {
@@ -1618,6 +1682,37 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard>
 
   String _formatDate(DateTime date) {
     return '${date.month}/${date.day}';
+  }
+
+  DateTime _parseDate(String dateString) {
+    final parts = dateString.split('/');
+    final month = int.parse(parts[0]);
+    final day = int.parse(parts[1]);
+    final now = DateTime.now();
+    return DateTime(now.year, month, day);
+  }
+
+  String _getMonthAbbreviation(int month) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return months[month - 1];
+  }
+
+  String _getWeekKey(DateTime date) {
+    final startOfWeek = date.subtract(Duration(days: date.weekday - 1));
+    return 'Week ${startOfWeek.day}/${startOfWeek.month}';
   }
 
   void _navigateToSuggestions(BuildContext context) {

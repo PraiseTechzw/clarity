@@ -36,7 +36,7 @@ class NetworkService extends ChangeNotifier {
   Future<void> _checkConnectivity() async {
     try {
       final result = await _connectivity.checkConnectivity();
-      _updateConnectivityStatus(result as List<ConnectivityResult>);
+      _updateConnectivityStatus([result]);
     } catch (e) {
       if (kDebugMode) {
         print('Error checking connectivity: $e');

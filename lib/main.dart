@@ -18,8 +18,13 @@ import 'firebase_options.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load environment variables
-  await dotenv.load(fileName: ".env");
+  // Load environment variables (optional)
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    // .env file not found, continue without it
+    print('No .env file found, using default values');
+  }
 
   // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
