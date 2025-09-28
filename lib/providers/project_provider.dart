@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../models/project.dart';
 import '../services/database_helper.dart';
+import 'sync_provider.dart';
 
 class ProjectProvider with ChangeNotifier {
   final DatabaseHelper _databaseHelper = DatabaseHelper();
+  SyncProvider? _syncProvider;
 
   List<Project> _projects = [];
   List<Client> _clients = [];
@@ -14,6 +16,11 @@ class ProjectProvider with ChangeNotifier {
   List<Client> get clients => _clients;
   bool get isLoading => _isLoading;
   String? get error => _error;
+
+  // Set sync provider reference
+  void setSyncProvider(SyncProvider syncProvider) {
+    _syncProvider = syncProvider;
+  }
 
   // Project methods
   Future<void> loadProjects() async {
@@ -33,6 +40,11 @@ class ProjectProvider with ChangeNotifier {
       await _databaseHelper.insertProject(project);
       _projects.add(project);
       notifyListeners();
+
+      // Auto-sync to cloud if available
+      if (_syncProvider != null && _syncProvider!.isSignedIn) {
+        await _syncProvider!.syncProject(project);
+      }
     } catch (e) {
       _error = e.toString();
       notifyListeners();
@@ -46,6 +58,11 @@ class ProjectProvider with ChangeNotifier {
       if (index != -1) {
         _projects[index] = project;
         notifyListeners();
+
+        // Auto-sync to cloud if available
+        if (_syncProvider != null && _syncProvider!.isSignedIn) {
+          await _syncProvider!.syncProject(project);
+        }
       }
     } catch (e) {
       _error = e.toString();
@@ -58,6 +75,11 @@ class ProjectProvider with ChangeNotifier {
       await _databaseHelper.deleteProject(projectId);
       _projects.removeWhere((p) => p.id == projectId);
       notifyListeners();
+
+      // Auto-sync deletion to cloud if available
+      if (_syncProvider != null && _syncProvider!.isSignedIn) {
+        await _syncProvider!.deleteProject(projectId);
+      }
     } catch (e) {
       _error = e.toString();
       notifyListeners();
@@ -90,6 +112,11 @@ class ProjectProvider with ChangeNotifier {
       await _databaseHelper.insertClient(client);
       _clients.add(client);
       notifyListeners();
+
+      // Auto-sync to cloud if available
+      if (_syncProvider != null && _syncProvider!.isSignedIn) {
+        await _syncProvider!.syncClient(client);
+      }
     } catch (e) {
       _error = e.toString();
       notifyListeners();
@@ -103,6 +130,11 @@ class ProjectProvider with ChangeNotifier {
       if (index != -1) {
         _clients[index] = client;
         notifyListeners();
+
+        // Auto-sync to cloud if available
+        if (_syncProvider != null && _syncProvider!.isSignedIn) {
+          await _syncProvider!.syncClient(client);
+        }
       }
     } catch (e) {
       _error = e.toString();
@@ -115,6 +147,11 @@ class ProjectProvider with ChangeNotifier {
       await _databaseHelper.deleteClient(clientId);
       _clients.removeWhere((c) => c.id == clientId);
       notifyListeners();
+
+      // Auto-sync deletion to cloud if available
+      if (_syncProvider != null && _syncProvider!.isSignedIn) {
+        await _syncProvider!.deleteClient(clientId);
+      }
     } catch (e) {
       _error = e.toString();
       notifyListeners();
@@ -186,5 +223,92 @@ class ProjectProvider with ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  // Sync methods
+  Future<void> syncFromCloud() async {
+    if (_syncProvider == null || !_syncProvider!.isSignedIn) return;
+
+    try {
+      _setLoading(true);
+      final cloudData = await _syncProvider!.downloadAllData();
+
+      if (cloudData.isNotEmpty) {
+        // Update projects from cloud
+        if (cloudData['projects'] != null) {
+          final cloudProjects = List<Project>.from(cloudData['projects']);
+          _projects = cloudProjects;
+        }
+
+        // Update clients from cloud
+        if (cloudData['clients'] != null) {
+          final cloudClients = List<Client>.from(cloudData['clients']);
+          _clients = cloudClients;
+        }
+
+        // Save to local database
+        for (final project in _projects) {
+          await _databaseHelper.insertProject(project);
+        }
+
+        for (final client in _clients) {
+          await _databaseHelper.insertClient(client);
+        }
+
+        notifyListeners();
+      }
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> syncToCloud() async {
+    if (_syncProvider == null || !_syncProvider!.isSignedIn) return;
+
+    try {
+      await _syncProvider!.syncAllData(projects: _projects, clients: _clients);
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  // Initialize with sync provider
+  Future<void> initializeWithSync(SyncProvider syncProvider) async {
+    _syncProvider = syncProvider;
+
+    // Load local data first without triggering loading state
+    await _loadProjectsSilently();
+    await _loadClientsSilently();
+
+    // Notify listeners after initial load is complete
+    notifyListeners();
+
+    // Then sync from cloud if available
+    if (syncProvider.isSignedIn) {
+      await syncFromCloud();
+    }
+  }
+
+  // Silent loading methods that don't trigger loading state
+  Future<void> _loadProjectsSilently() async {
+    try {
+      _projects = await _databaseHelper.getAllProjects();
+      _error = null;
+    } catch (e) {
+      _error = e.toString();
+    }
+  }
+
+  Future<void> _loadClientsSilently() async {
+    try {
+      _clients = await _databaseHelper.getAllClients();
+      _error = null;
+    } catch (e) {
+      _error = e.toString();
+    }
   }
 }

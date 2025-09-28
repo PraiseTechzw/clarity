@@ -66,18 +66,14 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Icon(
-            Icons.dashboard,
-            size: 48,
-            color: Colors.white,
-          ),
+          child: Icon(Icons.dashboard, size: 48, color: Colors.white),
         ),
         const SizedBox(height: 24),
         Text(
           'Welcome Back',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Text(
@@ -113,7 +109,9 @@ class _LoginScreenState extends State<LoginScreen> {
               if (value == null || value.isEmpty) {
                 return 'Please enter your email';
               }
-              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+              if (!RegExp(
+                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+              ).hasMatch(value)) {
                 return 'Please enter a valid email';
               }
               return null;
@@ -210,7 +208,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : const Text(
@@ -235,9 +235,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Row(
           children: [
             Expanded(
-              child: Divider(
-                color: Theme.of(context).colorScheme.outline,
-              ),
+              child: Divider(color: Theme.of(context).colorScheme.outline),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -249,9 +247,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             Expanded(
-              child: Divider(
-                color: Theme.of(context).colorScheme.outline,
-              ),
+              child: Divider(color: Theme.of(context).colorScheme.outline),
             ),
           ],
         ),
@@ -260,36 +256,66 @@ class _LoginScreenState extends State<LoginScreen> {
           children: [
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Google Sign-In coming soon!')),
-                  );
+                onPressed: () async {
+                  final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                  final success = await authProvider.signInWithGoogle();
+                  
+                  if (success && mounted) {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(builder: (context) => const MainNavigation()),
+                    );
+                  } else if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Google Sign-In failed. Please try again.'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                 },
-                icon: const Icon(Icons.g_mobiledata, size: 24),
+                icon: const Icon(
+                  Icons.g_mobiledata,
+                  size: 24,
+                  color: Colors.red,
+                ),
                 label: const Text('Google'),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
+                  side: const BorderSide(color: Colors.red),
                 ),
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Apple Sign-In coming soon!')),
-                  );
+                onPressed: () async {
+                  final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                  final success = await authProvider.signInWithGitHub();
+                  
+                  if (success && mounted) {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(builder: (context) => const MainNavigation()),
+                    );
+                  } else if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('GitHub Sign-In failed. Please try again.'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                 },
-                icon: const Icon(Icons.apple, size: 24),
-                label: const Text('Apple'),
+                icon: const Icon(Icons.code, size: 24, color: Colors.black),
+                label: const Text('GitHub'),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
+                  side: const BorderSide(color: Colors.black),
                 ),
               ),
             ),
@@ -312,9 +338,7 @@ class _LoginScreenState extends State<LoginScreen> {
         TextButton(
           onPressed: () {
             Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const RegisterScreen(),
-              ),
+              MaterialPageRoute(builder: (context) => const RegisterScreen()),
             );
           },
           child: const Text('Sign Up'),
@@ -326,13 +350,13 @@ class _LoginScreenState extends State<LoginScreen> {
   void _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      
+
       try {
         await authProvider.signIn(
           _emailController.text.trim(),
           _passwordController.text,
         );
-        
+
         if (mounted) {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => const MainNavigation()),

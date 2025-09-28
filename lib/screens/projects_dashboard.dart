@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/project_provider.dart';
+import '../providers/sync_provider.dart';
 import '../models/project.dart';
 import '../widgets/project_card.dart';
 import '../widgets/filter_bottom_sheet.dart';
+import '../widgets/sync_animation_widget.dart';
+import '../widgets/global_sync_overlay.dart';
 import 'new_project_screen.dart';
 import 'project_details_screen.dart';
 import 'notifications_screen.dart';
@@ -26,24 +29,31 @@ class _ProjectsDashboardState extends State<ProjectsDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: _buildAppBar(context),
-      body: Consumer<ProjectProvider>(
-        builder: (context, provider, child) {
-          if (provider.isLoading) {
+      body: Consumer2<ProjectProvider, SyncProvider>(
+        builder: (context, projectProvider, syncProvider, child) {
+          if (projectProvider.isLoading) {
             return _buildLoadingState();
           }
 
-          if (provider.error != null) {
-            return _buildErrorState(provider);
+          if (projectProvider.error != null) {
+            return _buildErrorState(projectProvider);
           }
 
-          final filteredProjects = _getFilteredProjects(provider.projects);
+          final filteredProjects = _getFilteredProjects(
+            projectProvider.projects,
+          );
 
           return RefreshIndicator(
-            onRefresh: () => provider.loadProjects(),
+            onRefresh: () async {
+              await projectProvider.loadProjects();
+              if (syncProvider.isSignedIn) {
+                await projectProvider.syncFromCloud();
+              }
+            },
             child: CustomScrollView(
               slivers: [
                 // Quick Stats Section
-                _buildQuickStatsSection(provider),
+                _buildQuickStatsSection(projectProvider),
 
                 // Projects List
                 if (filteredProjects.isEmpty)
@@ -80,6 +90,24 @@ class _ProjectsDashboardState extends State<ProjectsDashboard> {
         ],
       ),
       actions: [
+        Consumer<SyncProvider>(
+          builder: (context, syncProvider, child) {
+            return IconButton(
+              icon: SyncAnimationWidget(
+                isSyncing: syncProvider.isSyncing,
+                status: syncProvider.syncStatus,
+                size: 20,
+                showText: false,
+              ),
+              onPressed: () {
+                if (syncProvider.isSignedIn && !syncProvider.isSyncing) {
+                  context.read<ProjectProvider>().syncToCloud();
+                }
+              },
+              tooltip: syncProvider.isSyncing ? 'Syncing...' : 'Sync to cloud',
+            );
+          },
+        ),
         IconButton(
           icon: const Icon(Icons.search),
           onPressed: _navigateToSearch,
@@ -318,14 +346,13 @@ class _ProjectsDashboardState extends State<ProjectsDashboard> {
   }
 
   Widget _buildFloatingActionButton() {
-    return FloatingActionButton.extended(
-      heroTag: "new_project_fab",
-      onPressed: _navigateToNewProject,
-      icon: const Icon(Icons.add),
-      label: const Text('New Project'),
-      backgroundColor: Theme.of(context).colorScheme.primary,
-      foregroundColor: Colors.white,
-      elevation: 4,
+    return Consumer<SyncProvider>(
+      builder: (context, syncProvider, child) {
+        return SyncFloatingActionButton(
+          onPressed: _navigateToNewProject,
+          child: const Icon(Icons.add),
+        );
+      },
     );
   }
 

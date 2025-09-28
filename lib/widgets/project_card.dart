@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../models/project.dart';
+import '../providers/sync_provider.dart';
+import 'sync_animation_widget.dart';
 
 class ProjectCard extends StatelessWidget {
   final Project project;
@@ -118,14 +121,16 @@ class ProjectCard extends StatelessWidget {
                     color: colorScheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 4),
-                  Text(
-                    project.clientName,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      fontSize: 13,
+                  Expanded(
+                    child: Text(
+                      project.clientName,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 13,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
@@ -133,8 +138,23 @@ class ProjectCard extends StatelessWidget {
           ),
         ),
 
-        // Priority chip
-        _buildPriorityChip(),
+        // Priority chip and sync status
+        Row(
+          children: [
+            Consumer<SyncProvider>(
+              builder: (context, syncProvider, child) {
+                return SyncStatusIndicator(
+                  isSyncing: syncProvider.isSyncing,
+                  status: syncProvider.syncStatus,
+                  isOnline: syncProvider.isOnline,
+                  isSignedIn: syncProvider.isSignedIn,
+                );
+              },
+            ),
+            const SizedBox(width: 8),
+            _buildPriorityChip(),
+          ],
+        ),
       ],
     );
   }

@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/project_provider.dart';
+import '../providers/locale_provider.dart';
+import 'notifications_settings_screen.dart';
+import 'backup_restore_screen.dart';
+import 'auth/login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -59,10 +64,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: const Text('Edit'),
             )
           else
-            TextButton(
-              onPressed: _saveProfile,
-              child: const Text('Save'),
-            ),
+            TextButton(onPressed: _saveProfile, child: const Text('Save')),
         ],
       ),
       body: Consumer<AuthProvider>(
@@ -103,7 +105,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 CircleAvatar(
                   radius: 50,
-                  backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primary.withOpacity(0.1),
                   child: Text(
                     authProvider.userName?.isNotEmpty == true
                         ? authProvider.userName![0].toUpperCase()
@@ -123,17 +127,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.primary,
                         shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white,
-                          width: 2,
-                        ),
+                        border: Border.all(color: Colors.white, width: 2),
                       ),
                       child: IconButton(
                         icon: const Icon(Icons.camera_alt, size: 20),
                         color: Colors.white,
                         onPressed: () {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Photo upload coming soon!')),
+                            const SnackBar(
+                              content: Text('Photo upload coming soon!'),
+                            ),
                           );
                         },
                       ),
@@ -144,9 +147,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 16),
             Text(
               authProvider.userName ?? 'Guest User',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
             Text(
@@ -159,13 +162,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
+                color: authProvider.isAuthenticated
+                    ? Theme.of(context).colorScheme.primaryContainer
+                    : Theme.of(context).colorScheme.surfaceVariant,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
-                'Premium Member',
+                authProvider.isAuthenticated
+                    ? 'Premium Member'
+                    : 'Offline Mode',
                 style: TextStyle(
-                  color: Theme.of(context).colorScheme.primary,
+                  color: authProvider.isAuthenticated
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
                   fontSize: 12,
                 ),
@@ -188,12 +197,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               Text(
                 'Personal Information',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-              
+
               // Name
               TextFormField(
                 controller: _nameController,
@@ -205,7 +214,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   filled: true,
-                  fillColor: _isEditing 
+                  fillColor: _isEditing
                       ? Theme.of(context).colorScheme.surface
                       : Theme.of(context).colorScheme.surfaceVariant,
                 ),
@@ -230,7 +239,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   filled: true,
-                  fillColor: _isEditing 
+                  fillColor: _isEditing
                       ? Theme.of(context).colorScheme.surface
                       : Theme.of(context).colorScheme.surfaceVariant,
                 ),
@@ -238,7 +247,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   if (_isEditing && (value == null || value.isEmpty)) {
                     return 'Please enter your email';
                   }
-                  if (_isEditing && value != null && !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                  if (_isEditing &&
+                      value != null &&
+                      !RegExp(
+                        r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                      ).hasMatch(value)) {
                     return 'Please enter a valid email';
                   }
                   return null;
@@ -258,7 +271,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   filled: true,
-                  fillColor: _isEditing 
+                  fillColor: _isEditing
                       ? Theme.of(context).colorScheme.surface
                       : Theme.of(context).colorScheme.surfaceVariant,
                 ),
@@ -276,7 +289,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   filled: true,
-                  fillColor: _isEditing 
+                  fillColor: _isEditing
                       ? Theme.of(context).colorScheme.surface
                       : Theme.of(context).colorScheme.surfaceVariant,
                 ),
@@ -295,7 +308,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   filled: true,
-                  fillColor: _isEditing 
+                  fillColor: _isEditing
                       ? Theme.of(context).colorScheme.surface
                       : Theme.of(context).colorScheme.surfaceVariant,
                 ),
@@ -308,77 +321,111 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildStatistics() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Your Statistics',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+    return Consumer2<ProjectProvider, LocaleProvider>(
+      builder: (context, projectProvider, localeProvider, child) {
+        final projects = projectProvider.projects;
+        final clients = projectProvider.clients;
+        final totalTasks = projects.fold<int>(
+          0,
+          (sum, project) =>
+              sum +
+              project.phases.fold<int>(
+                0,
+                (phaseSum, phase) => phaseSum + phase.tasks.length,
               ),
-            ),
-            const SizedBox(height: 16),
-            Row(
+        );
+        final completedTasks = projects.fold<int>(
+          0,
+          (sum, project) =>
+              sum +
+              project.phases.fold<int>(
+                0,
+                (phaseSum, phase) =>
+                    phaseSum +
+                    phase.tasks.where((task) => task.isCompleted).length,
+              ),
+        );
+        final totalRevenue = projects.fold<double>(
+          0,
+          (sum, project) => sum + project.totalPaid,
+        );
+
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: _buildStatCard(
-                    'Projects',
-                    '12',
-                    Icons.folder,
-                    Theme.of(context).colorScheme.primary,
+                Text(
+                  'Your Statistics',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildStatCard(
-                    'Clients',
-                    '8',
-                    Icons.people,
-                    Colors.blue,
-                  ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildStatCard(
+                        'Projects',
+                        projects.length.toString(),
+                        Icons.folder,
+                        Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildStatCard(
+                        'Clients',
+                        clients.length.toString(),
+                        Icons.people,
+                        Colors.blue,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildStatCard(
+                        'Tasks',
+                        '$completedTasks/$totalTasks',
+                        Icons.checklist,
+                        Colors.green,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildStatCard(
+                        'Revenue',
+                        '${localeProvider.getCurrencySymbol()}${totalRevenue.toStringAsFixed(0)}',
+                        Icons.attach_money,
+                        Colors.orange,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard(
-                    'Tasks',
-                    '45',
-                    Icons.checklist,
-                    Colors.green,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildStatCard(
-                    'Revenue',
-                    '\$12.5K',
-                    Icons.attach_money,
-                    Colors.orange,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.2),
-        ),
+        border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Column(
         children: [
@@ -404,56 +451,100 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildQuickActions() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Quick Actions',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Quick Actions',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (authProvider.isAuthenticated) ...[
+                  _buildActionTile(
+                    icon: Icons.security,
+                    title: 'Change Password',
+                    onTap: () {
+                      _showChangePasswordDialog();
+                    },
+                  ),
+                  _buildActionTile(
+                    icon: Icons.notifications,
+                    title: 'Notification Settings',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const NotificationsSettingsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildActionTile(
+                    icon: Icons.privacy_tip,
+                    title: 'Privacy Settings',
+                    onTap: () {
+                      _showPrivacySettings();
+                    },
+                  ),
+                  _buildActionTile(
+                    icon: Icons.download,
+                    title: 'Export Data',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const BackupRestoreScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ] else ...[
+                  _buildActionTile(
+                    icon: Icons.login,
+                    title: 'Sign In',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const LoginScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildActionTile(
+                    icon: Icons.notifications,
+                    title: 'Notification Settings',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const NotificationsSettingsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildActionTile(
+                    icon: Icons.download,
+                    title: 'Export Data',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const BackupRestoreScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ],
             ),
-            const SizedBox(height: 16),
-            _buildActionTile(
-              icon: Icons.security,
-              title: 'Change Password',
-              onTap: () {
-                _showChangePasswordDialog();
-              },
-            ),
-            _buildActionTile(
-              icon: Icons.notifications,
-              title: 'Notification Settings',
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Notification settings coming soon!')),
-                );
-              },
-            ),
-            _buildActionTile(
-              icon: Icons.privacy_tip,
-              title: 'Privacy Settings',
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Privacy settings coming soon!')),
-                );
-              },
-            ),
-            _buildActionTile(
-              icon: Icons.download,
-              title: 'Export Data',
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Data export coming soon!')),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -473,17 +564,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _saveProfile() async {
     if (_formKey.currentState!.validate()) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      
+
       try {
         await authProvider.updateProfile(
           _nameController.text.trim(),
           _emailController.text.trim(),
         );
-        
+
         setState(() {
           _isEditing = false;
         });
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Profile updated successfully')),
@@ -549,8 +640,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              if (newPasswordController.text == confirmPasswordController.text) {
-                final authProvider = Provider.of<AuthProvider>(context, listen: false);
+              if (newPasswordController.text ==
+                  confirmPasswordController.text) {
+                final authProvider = Provider.of<AuthProvider>(
+                  context,
+                  listen: false,
+                );
                 try {
                   await authProvider.changePassword(
                     currentPasswordController.text,
@@ -558,12 +653,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   );
                   Navigator.of(context).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Password changed successfully')),
+                    const SnackBar(
+                      content: Text('Password changed successfully'),
+                    ),
                   );
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Failed to change password: ${e.toString()}'),
+                      content: Text(
+                        'Failed to change password: ${e.toString()}',
+                      ),
                       backgroundColor: Theme.of(context).colorScheme.error,
                     ),
                   );
@@ -578,6 +677,61 @@ class _ProfileScreenState extends State<ProfileScreen> {
               }
             },
             child: const Text('Change'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPrivacySettings() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Privacy Settings'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.analytics),
+              title: const Text('Analytics'),
+              subtitle: const Text(
+                'Help improve the app by sharing usage data',
+              ),
+              trailing: Switch(
+                value: true,
+                onChanged: (value) {
+                  // Handle analytics toggle
+                },
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.bug_report),
+              title: const Text('Crash Reports'),
+              subtitle: const Text('Automatically send crash reports'),
+              trailing: Switch(
+                value: true,
+                onChanged: (value) {
+                  // Handle crash reports toggle
+                },
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.cloud_sync),
+              title: const Text('Cloud Sync'),
+              subtitle: const Text('Sync data across devices'),
+              trailing: Switch(
+                value: true,
+                onChanged: (value) {
+                  // Handle cloud sync toggle
+                },
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
           ),
         ],
       ),

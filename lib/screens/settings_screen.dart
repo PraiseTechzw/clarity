@@ -1,12 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import '../providers/project_provider.dart';
+import '../providers/sync_provider.dart';
+import '../providers/theme_provider.dart';
+import '../providers/locale_provider.dart';
+import '../services/storage_service.dart';
+import '../widgets/sync_animation_widget.dart';
 import 'auth/login_screen.dart';
 import 'profile_screen.dart';
 import 'backup_restore_screen.dart';
 import 'notifications_settings_screen.dart';
+import 'cloud_sync_screen.dart';
 import 'about_screen.dart';
+
+extension StringExtension on String {
+  String capitalize() {
+    return "${this[0].toUpperCase()}${substring(1).toLowerCase()}";
+  }
+}
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -16,185 +27,427 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  final StorageService _storageService = StorageService();
+  Map<String, dynamic> _storageInfo = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStorageInfo();
+  }
+
+  Future<void> _loadStorageInfo() async {
+    final info = await _storageService.getStorageInfo();
+    if (mounted) {
+      setState(() {
+        _storageInfo = info;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const ProfileScreen(),
+      body: CustomScrollView(
+        slivers: [
+          // Enhanced App Bar
+          SliverAppBar(
+            expandedHeight: 120,
+            floating: false,
+            pinned: true,
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            foregroundColor: Colors.white,
+            flexibleSpace: FlexibleSpaceBar(
+              title: const Text(
+                'Settings',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
-              );
-            },
-            tooltip: 'Profile',
+              ),
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Theme.of(context).colorScheme.primary,
+                      Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                    ],
+                  ),
+                ),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      top: 20,
+                      right: 20,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.person, color: Colors.white),
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const ProfileScreen(),
+                              ),
+                            );
+                          },
+                          tooltip: 'Profile',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Settings Content
+          SliverToBoxAdapter(
+            child: Consumer<AuthProvider>(
+              builder: (context, authProvider, child) {
+                return Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      // User Profile Section
+                      _buildEnhancedUserSection(authProvider),
+                      const SizedBox(height: 32),
+
+                      // Account Settings
+                      _buildEnhancedSectionTitle('Account', Icons.account_circle),
+                      const SizedBox(height: 12),
+                      _buildEnhancedSettingsCard([
+                        _buildEnhancedSettingsTile(
+                          icon: Icons.person_outline,
+                          title: 'Profile',
+                          subtitle: 'Manage your personal information',
+                          gradient: [Colors.blue, Colors.blue.shade300],
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const ProfileScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildEnhancedSettingsTile(
+                          icon: Icons.security_outlined,
+                          title: 'Security',
+                          subtitle: 'Password and security settings',
+                          gradient: [Colors.orange, Colors.orange.shade300],
+                          onTap: () {
+                            _showSecurityDialog();
+                          },
+                        ),
+                        _buildEnhancedSettingsTile(
+                          icon: Icons.notifications_outlined,
+                          title: 'Notifications',
+                          subtitle: 'Manage notification preferences',
+                          gradient: [Colors.purple, Colors.purple.shade300],
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const NotificationsSettingsScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      ]),
+
+                      const SizedBox(height: 32),
+
+                      // App Settings
+                      _buildEnhancedSectionTitle('App', Icons.settings),
+                      const SizedBox(height: 12),
+                      _buildEnhancedSettingsCard([
+                        Consumer<ThemeProvider>(
+                          builder: (context, themeProvider, child) {
+                            return _buildEnhancedSettingsTile(
+                              icon: Icons.palette_outlined,
+                              title: 'Theme',
+                              subtitle: themeProvider.getThemeDisplayName(),
+                              gradient: [Colors.indigo, Colors.indigo.shade300],
+                              trailing: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.primaryContainer,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      themeProvider.getThemeIcon(),
+                                      size: 16,
+                                      color: Theme.of(context).colorScheme.primary,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      themeProvider.getThemeDisplayName(),
+                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: Theme.of(context).colorScheme.primary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              onTap: () => _showThemeDialog(themeProvider),
+                            );
+                          },
+                        ),
+                        Consumer<LocaleProvider>(
+                          builder: (context, localeProvider, child) {
+                            return _buildEnhancedSettingsTile(
+                              icon: Icons.language_outlined,
+                              title: 'Language',
+                              subtitle: localeProvider.selectedLanguage,
+                              gradient: [Colors.teal, Colors.teal.shade300],
+                              onTap: () => _showLanguageDialog(localeProvider),
+                            );
+                          },
+                        ),
+                        Consumer<LocaleProvider>(
+                          builder: (context, localeProvider, child) {
+                            return _buildEnhancedSettingsTile(
+                              icon: Icons.currency_exchange_outlined,
+                              title: 'Currency',
+                              subtitle: localeProvider.getCurrencyDisplayName(
+                                localeProvider.selectedCurrency,
+                              ),
+                              gradient: [Colors.green, Colors.green.shade300],
+                              onTap: () => _showCurrencyDialog(localeProvider),
+                            );
+                          },
+                        ),
+                      ]),
+
+                      const SizedBox(height: 32),
+
+                      // Data & Storage
+                      _buildEnhancedSectionTitle('Data & Storage', Icons.storage),
+                      const SizedBox(height: 12),
+                      _buildEnhancedSettingsCard([
+                        _buildEnhancedSyncSettingsTile(),
+                        _buildEnhancedSettingsTile(
+                          icon: Icons.backup_outlined,
+                          title: 'Backup & Restore',
+                          subtitle: 'Export and import your data',
+                          gradient: [Colors.cyan, Colors.cyan.shade300],
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const BackupRestoreScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildEnhancedSettingsTile(
+                          icon: Icons.storage_outlined,
+                          title: 'Storage Usage',
+                          subtitle: 'Total: ${_storageInfo['total'] ?? '0 B'}',
+                          gradient: [Colors.amber, Colors.amber.shade300],
+                          onTap: () {
+                            _showStorageDialog();
+                          },
+                        ),
+                        _buildEnhancedSettingsTile(
+                          icon: Icons.delete_outline,
+                          title: 'Clear Cache',
+                          subtitle: 'Free up ${_storageInfo['cache'] ?? '0 B'}',
+                          gradient: [Colors.red, Colors.red.shade300],
+                          onTap: () {
+                            _showClearCacheDialog();
+                          },
+                        ),
+                      ]),
+
+                      const SizedBox(height: 32),
+
+                      // Support & Info
+                      _buildEnhancedSectionTitle('Support & Info', Icons.help_outline),
+                      const SizedBox(height: 12),
+                      _buildEnhancedSettingsCard([
+                        _buildEnhancedSettingsTile(
+                          icon: Icons.help_outline,
+                          title: 'Help & Support',
+                          subtitle: 'Get help and contact support',
+                          gradient: [Colors.lightBlue, Colors.lightBlue.shade300],
+                          onTap: () {
+                            _showHelpDialog();
+                          },
+                        ),
+                        _buildEnhancedSettingsTile(
+                          icon: Icons.bug_report_outlined,
+                          title: 'Report a Bug',
+                          subtitle: 'Help us improve the app',
+                          gradient: [Colors.deepOrange, Colors.deepOrange.shade300],
+                          onTap: () {
+                            _showBugReportDialog();
+                          },
+                        ),
+                        _buildEnhancedSettingsTile(
+                          icon: Icons.info_outline,
+                          title: 'About',
+                          subtitle: 'App version and information',
+                          gradient: [Colors.grey, Colors.grey.shade400],
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const AboutScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      ]),
+
+                      const SizedBox(height: 32),
+
+                      // Authentication Section
+                      if (authProvider.isAuthenticated) ...[
+                        _buildEnhancedSignOutButton(authProvider),
+                        const SizedBox(height: 32),
+                      ] else ...[
+                        _buildEnhancedSignInSection(),
+                        const SizedBox(height: 32),
+                      ],
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),
-      body: Consumer<AuthProvider>(
-        builder: (context, authProvider, child) {
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              // User Profile Section
-              _buildUserSection(authProvider),
-              const SizedBox(height: 24),
+    );
+  }
 
-              // Account Settings
-              _buildSectionTitle('Account'),
-              _buildSettingsCard([
-                _buildSettingsTile(
-                  icon: Icons.person_outline,
-                  title: 'Profile',
-                  subtitle: 'Manage your personal information',
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const ProfileScreen(),
+  Widget _buildEnhancedUserSection(AuthProvider authProvider) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            Theme.of(context).colorScheme.secondary.withOpacity(0.1),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Row(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Theme.of(context).colorScheme.primary,
+                    Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                  ],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: CircleAvatar(
+                radius: 35,
+                backgroundColor: Colors.transparent,
+                child: Text(
+                  authProvider.userName?.isNotEmpty == true
+                      ? authProvider.userName![0].toUpperCase()
+                      : 'U',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    authProvider.userName ?? 'Guest User',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: authProvider.isAuthenticated
+                          ? Colors.green.withOpacity(0.1)
+                          : Colors.orange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: authProvider.isAuthenticated
+                            ? Colors.green.withOpacity(0.3)
+                            : Colors.orange.withOpacity(0.3),
+                        width: 1,
                       ),
-                    );
-                  },
-                ),
-                _buildSettingsTile(
-                  icon: Icons.security_outlined,
-                  title: 'Security',
-                  subtitle: 'Password and security settings',
-                  onTap: () {
-                    _showSecurityDialog();
-                  },
-                ),
-                _buildSettingsTile(
-                  icon: Icons.notifications_outlined,
-                  title: 'Notifications',
-                  subtitle: 'Manage notification preferences',
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const NotificationsSettingsScreen(),
+                    ),
+                    child: Text(
+                      authProvider.userEmail ?? 'Offline Mode',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: authProvider.isAuthenticated
+                            ? Colors.green.shade700
+                            : Colors.orange.shade700,
+                        fontWeight: FontWeight.w600,
                       ),
-                    );
-                  },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: IconButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const ProfileScreen(),
+                    ),
+                  );
+                },
+                icon: Icon(
+                  Icons.edit,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
-              ]),
-
-              const SizedBox(height: 24),
-
-              // App Settings
-              _buildSectionTitle('App'),
-              _buildSettingsCard([
-                _buildSettingsTile(
-                  icon: Icons.palette_outlined,
-                  title: 'Theme',
-                  subtitle: 'Light, Dark, or System',
-                  trailing: _buildThemeSelector(),
-                  onTap: () {
-                    _showThemeDialog();
-                  },
-                ),
-                _buildSettingsTile(
-                  icon: Icons.language_outlined,
-                  title: 'Language',
-                  subtitle: 'English',
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Language selection coming soon!')),
-                    );
-                  },
-                ),
-                _buildSettingsTile(
-                  icon: Icons.currency_exchange_outlined,
-                  title: 'Currency',
-                  subtitle: 'USD (\$)',
-                  onTap: () {
-                    _showCurrencyDialog();
-                  },
-                ),
-              ]),
-
-              const SizedBox(height: 24),
-
-              // Data & Storage
-              _buildSectionTitle('Data & Storage'),
-              _buildSettingsCard([
-                _buildSettingsTile(
-                  icon: Icons.backup_outlined,
-                  title: 'Backup & Restore',
-                  subtitle: 'Export and import your data',
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const BackupRestoreScreen(),
-                      ),
-                    );
-                  },
-                ),
-                _buildSettingsTile(
-                  icon: Icons.storage_outlined,
-                  title: 'Storage Usage',
-                  subtitle: 'View storage details',
-                  onTap: () {
-                    _showStorageDialog();
-                  },
-                ),
-                _buildSettingsTile(
-                  icon: Icons.delete_outline,
-                  title: 'Clear Cache',
-                  subtitle: 'Free up storage space',
-                  onTap: () {
-                    _showClearCacheDialog();
-                  },
-                ),
-              ]),
-
-              const SizedBox(height: 24),
-
-              // Support & Info
-              _buildSectionTitle('Support & Info'),
-              _buildSettingsCard([
-                _buildSettingsTile(
-                  icon: Icons.help_outline,
-                  title: 'Help & Support',
-                  subtitle: 'Get help and contact support',
-                  onTap: () {
-                    _showHelpDialog();
-                  },
-                ),
-                _buildSettingsTile(
-                  icon: Icons.bug_report_outlined,
-                  title: 'Report a Bug',
-                  subtitle: 'Help us improve the app',
-                  onTap: () {
-                    _showBugReportDialog();
-                  },
-                ),
-                _buildSettingsTile(
-                  icon: Icons.info_outline,
-                  title: 'About',
-                  subtitle: 'App version and information',
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const AboutScreen(),
-                      ),
-                    );
-                  },
-                ),
-              ]),
-
-              const SizedBox(height: 24),
-
-              // Sign Out
-              if (authProvider.isAuthenticated) ...[
-                _buildSignOutButton(authProvider),
-                const SizedBox(height: 24),
-              ],
-            ],
-          );
-        },
+                tooltip: 'Edit Profile',
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -207,7 +460,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             CircleAvatar(
               radius: 30,
-              backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.primary.withOpacity(0.1),
               child: Text(
                 authProvider.userName?.isNotEmpty == true
                     ? authProvider.userName![0].toUpperCase()
@@ -256,6 +511,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildEnhancedSectionTitle(String title, IconData icon) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Theme.of(context).colorScheme.primary,
+                Theme.of(context).colorScheme.primary.withOpacity(0.7),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Icon(
+            icon,
+            color: Colors.white,
+            size: 20,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          title,
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -269,10 +565,120 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildEnhancedSettingsCard(List<Widget> children) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Column(children: children),
+      ),
+    );
+  }
+
   Widget _buildSettingsCard(List<Widget> children) {
-    return Card(
-      child: Column(
-        children: children,
+    return Card(child: Column(children: children));
+  }
+
+  Widget _buildEnhancedSettingsTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required List<Color> gradient,
+    Widget? trailing,
+    VoidCallback? onTap,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: gradient,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: gradient[0].withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    icon,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (trailing != null) ...[
+                  const SizedBox(width: 12),
+                  trailing,
+                ] else ...[
+                  const SizedBox(width: 12),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -293,21 +699,133 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildThemeSelector() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          Icons.light_mode,
-          size: 16,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
+  Widget _buildEnhancedSyncSettingsTile() {
+    return Consumer<SyncProvider>(
+      builder: (context, syncProvider, child) {
+        return _buildEnhancedSettingsTile(
+          icon: Icons.cloud_sync,
+          title: 'Cloud Sync',
+          subtitle: syncProvider.isSignedIn
+              ? syncProvider.isOnline
+                  ? 'Synced and online'
+                  : 'Offline mode'
+              : 'Not signed in',
+          gradient: syncProvider.isSignedIn
+              ? [Colors.blue, Colors.blue.shade300]
+              : [Colors.grey, Colors.grey.shade400],
+          trailing: SyncStatusIndicator(
+            isSyncing: syncProvider.isSyncing,
+            status: syncProvider.syncStatus,
+            isOnline: syncProvider.isOnline,
+            isSignedIn: syncProvider.isSignedIn,
+          ),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (context) => const CloudSyncScreen()),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSyncSettingsTile() {
+    return Consumer<SyncProvider>(
+      builder: (context, syncProvider, child) {
+        return ListTile(
+          leading: SyncAnimationWidget(
+            isSyncing: syncProvider.isSyncing,
+            status: syncProvider.syncStatus,
+            size: 24,
+            showText: false,
+          ),
+          title: const Text('Cloud Sync'),
+          subtitle: Text(
+            syncProvider.isSignedIn
+                ? syncProvider.isOnline
+                      ? 'Synced and online'
+                      : 'Offline mode'
+                : 'Not signed in',
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SyncStatusIndicator(
+                isSyncing: syncProvider.isSyncing,
+                status: syncProvider.syncStatus,
+                isOnline: syncProvider.isOnline,
+                isSignedIn: syncProvider.isSignedIn,
+              ),
+              const SizedBox(width: 8),
+              const Icon(Icons.arrow_forward_ios, size: 16),
+            ],
+          ),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (context) => const CloudSyncScreen()),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSignInSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.cloud_off,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Sign In to Sync',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Sign in to sync your data across devices and access cloud backup features.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const LoginScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.login),
+                label: const Text('Sign In'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 4),
-        Text(
-          'Light',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-      ],
+      ),
     );
   }
 
@@ -335,7 +853,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Security Settings'),
-        content: const Text('Change password and security settings will be available soon.'),
+        content: const Text(
+          'Change password and security settings will be available soon.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -346,7 +866,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showThemeDialog() {
+  void _showThemeDialog(ThemeProvider themeProvider) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -354,34 +874,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(
-              leading: const Icon(Icons.light_mode),
+            RadioListTile<ThemeMode>(
               title: const Text('Light'),
-              onTap: () {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Light theme selected')),
-                );
+              subtitle: const Text('Always use light theme'),
+              value: ThemeMode.light,
+              groupValue: themeProvider.themeMode,
+              onChanged: (ThemeMode? value) {
+                if (value != null) {
+                  themeProvider.setThemeMode(value);
+                  Navigator.of(context).pop();
+                }
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.dark_mode),
+            RadioListTile<ThemeMode>(
               title: const Text('Dark'),
-              onTap: () {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Dark theme selected')),
-                );
+              subtitle: const Text('Always use dark theme'),
+              value: ThemeMode.dark,
+              groupValue: themeProvider.themeMode,
+              onChanged: (ThemeMode? value) {
+                if (value != null) {
+                  themeProvider.setThemeMode(value);
+                  Navigator.of(context).pop();
+                }
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.settings),
+            RadioListTile<ThemeMode>(
               title: const Text('System'),
-              onTap: () {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('System theme selected')),
-                );
+              subtitle: const Text('Follow system theme'),
+              value: ThemeMode.system,
+              groupValue: themeProvider.themeMode,
+              onChanged: (ThemeMode? value) {
+                if (value != null) {
+                  themeProvider.setThemeMode(value);
+                  Navigator.of(context).pop();
+                }
               },
             ),
           ],
@@ -396,42 +922,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showCurrencyDialog() {
+  void _showCurrencyDialog(LocaleProvider localeProvider) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Select Currency'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              title: const Text('USD (\$)'),
-              onTap: () {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Currency set to USD')),
-                );
+          children: localeProvider.getSupportedCurrencies().map((currency) {
+            return RadioListTile<String>(
+              title: Text(localeProvider.getCurrencyDisplayName(currency)),
+              value: currency,
+              groupValue: localeProvider.selectedCurrency,
+              onChanged: (String? value) {
+                if (value != null) {
+                  localeProvider.setCurrency(value);
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Currency set to $value')),
+                  );
+                }
               },
-            ),
-            ListTile(
-              title: const Text('EUR (€)'),
-              onTap: () {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Currency set to EUR')),
-                );
-              },
-            ),
-            ListTile(
-              title: const Text('GBP (£)'),
-              onTap: () {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Currency set to GBP')),
-                );
-              },
-            ),
-          ],
+            );
+          }).toList(),
         ),
         actions: [
           TextButton(
@@ -451,10 +964,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildStorageItem('Projects', '2.3 MB', 0.3),
-            _buildStorageItem('Images', '1.8 MB', 0.2),
-            _buildStorageItem('Documents', '0.9 MB', 0.1),
-            _buildStorageItem('Cache', '0.4 MB', 0.05),
+            _buildStorageItem(
+              'Database',
+              _storageInfo['database'] ?? '0 B',
+              _storageInfo['databaseBytes'] ?? 0,
+              _storageInfo['totalBytes'] ?? 1,
+            ),
+            _buildStorageItem(
+              'Cache',
+              _storageInfo['cache'] ?? '0 B',
+              _storageInfo['cacheBytes'] ?? 0,
+              _storageInfo['totalBytes'] ?? 1,
+            ),
+            _buildStorageItem(
+              'Documents',
+              _storageInfo['documents'] ?? '0 B',
+              _storageInfo['documentsBytes'] ?? 0,
+              _storageInfo['totalBytes'] ?? 1,
+            ),
+            _buildStorageItem(
+              'Preferences',
+              _storageInfo['preferences'] ?? '0 B',
+              _storageInfo['preferencesBytes'] ?? 0,
+              _storageInfo['totalBytes'] ?? 1,
+            ),
+            const Divider(),
+            _buildStorageItem(
+              'Total',
+              _storageInfo['total'] ?? '0 B',
+              _storageInfo['totalBytes'] ?? 0,
+              _storageInfo['totalBytes'] ?? 1,
+              isTotal: true,
+            ),
           ],
         ),
         actions: [
@@ -462,12 +1003,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('OK'),
           ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _loadStorageInfo();
+            },
+            child: const Text('Refresh'),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildStorageItem(String name, String size, double percentage) {
+  Widget _buildStorageItem(
+    String name,
+    String size,
+    int bytes,
+    int totalBytes, {
+    bool isTotal = false,
+  }) {
+    final percentage = totalBytes > 0 ? bytes / totalBytes : 0.0;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -476,17 +1031,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name),
+                Text(
+                  name,
+                  style: isTotal
+                      ? Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        )
+                      : Theme.of(context).textTheme.bodyMedium,
+                ),
                 const SizedBox(height: 4),
                 LinearProgressIndicator(
                   value: percentage,
                   backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    isTotal
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.secondary,
+                  ),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 16),
-          Text(size),
+          Text(
+            size,
+            style: isTotal
+                ? Theme.of(
+                    context,
+                  ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)
+                : Theme.of(context).textTheme.bodyMedium,
+          ),
         ],
       ),
     );
@@ -497,18 +1071,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Clear Cache'),
-        content: const Text('This will clear all cached data and free up storage space. This action cannot be undone.'),
+        content: Text(
+          'This will clear all cached data and free up ${_storageInfo['cache'] ?? '0 B'} of storage space. This action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Cache cleared successfully')),
-              );
+              final success = await _storageService.clearCache();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      success
+                          ? 'Cache cleared successfully'
+                          : 'Failed to clear cache',
+                    ),
+                    backgroundColor: success ? Colors.green : Colors.red,
+                  ),
+                );
+                await _loadStorageInfo();
+              }
             },
             child: const Text('Clear'),
           ),
@@ -522,7 +1109,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Help & Support'),
-        content: const Text('For help and support, please contact us at support@clarity.app or visit our help center.'),
+        content: const Text(
+          'For help and support, please contact us at support@clarity.app or visit our help center.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -538,7 +1127,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Report a Bug'),
-        content: const Text('Help us improve Clarity by reporting bugs. Please describe the issue you encountered.'),
+        content: const Text(
+          'Help us improve Clarity by reporting bugs. Please describe the issue you encountered.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -548,10 +1139,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onPressed: () {
               Navigator.of(context).pop();
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Bug report submitted. Thank you!')),
+                const SnackBar(
+                  content: Text('Bug report submitted. Thank you!'),
+                ),
               );
             },
             child: const Text('Submit'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLanguageDialog(LocaleProvider localeProvider) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select Language'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: localeProvider.getSupportedLanguages().map((lang) {
+            return RadioListTile<String>(
+              title: Text(lang),
+              value: lang,
+              groupValue: localeProvider.selectedLanguage,
+              onChanged: (String? value) {
+                if (value != null) {
+                  localeProvider.setLanguage(value);
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Language set to $value')),
+                  );
+                }
+              },
+            );
+          }).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
           ),
         ],
       ),
@@ -575,9 +1202,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               await authProvider.signOut();
               if (mounted) {
                 Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(
-                    builder: (context) => const LoginScreen(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
                 );
               }
             },

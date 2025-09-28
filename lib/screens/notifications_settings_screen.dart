@@ -1,177 +1,171 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/notification_provider.dart';
 
 class NotificationsSettingsScreen extends StatefulWidget {
   const NotificationsSettingsScreen({super.key});
 
   @override
-  State<NotificationsSettingsScreen> createState() => _NotificationsSettingsScreenState();
+  State<NotificationsSettingsScreen> createState() =>
+      _NotificationsSettingsScreenState();
 }
 
-class _NotificationsSettingsScreenState extends State<NotificationsSettingsScreen> {
-  bool _projectDeadlines = true;
-  bool _paymentReminders = true;
-  bool _taskReminders = true;
-  bool _clientUpdates = false;
-  bool _systemUpdates = true;
-  bool _marketingEmails = false;
-  
-  String _reminderTime = '09:00';
-  bool _weekendNotifications = false;
-
+class _NotificationsSettingsScreenState
+    extends State<NotificationsSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Notification Settings'),
+        centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Project Notifications
-            _buildSectionCard(
-              title: 'Project Notifications',
-              icon: Icons.folder,
-              color: Colors.blue,
+      body: Consumer<NotificationProvider>(
+        builder: (context, notificationProvider, child) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildSwitchTile(
-                  'Project Deadlines',
-                  'Get notified when project deadlines are approaching',
-                  _projectDeadlines,
-                  (value) => setState(() => _projectDeadlines = value),
+                // General Notifications
+                _buildSectionCard(
+                  context,
+                  title: 'General Notifications',
+                  children: [
+                    _buildSwitchTile(
+                      context,
+                      title: 'Enable Notifications',
+                      subtitle: 'Receive notifications from Clarity',
+                      value: notificationProvider.notificationsEnabled,
+                      onChanged: notificationProvider.toggleNotifications,
+                    ),
+                    if (notificationProvider.notificationsEnabled) ...[
+                      const Divider(),
+                      _buildInfoTile(
+                        context,
+                        title: 'FCM Token',
+                        subtitle:
+                            notificationProvider.fcmToken ?? 'Not available',
+                        icon: Icons.token,
+                      ),
+                    ],
+                  ],
                 ),
-                _buildSwitchTile(
-                  'Payment Reminders',
-                  'Remind clients about outstanding payments',
-                  _paymentReminders,
-                  (value) => setState(() => _paymentReminders = value),
+
+                const SizedBox(height: 16),
+
+                // Project Notifications
+                _buildSectionCard(
+                  context,
+                  title: 'Project Notifications',
+                  children: [
+                    _buildSwitchTile(
+                      context,
+                      title: 'Project Reminders',
+                      subtitle: 'Get reminded about project updates',
+                      value: notificationProvider.projectRemindersEnabled,
+                      onChanged: notificationProvider.toggleProjectReminders,
+                    ),
+                    _buildSwitchTile(
+                      context,
+                      title: 'Deadline Alerts',
+                      subtitle: 'Get notified about upcoming deadlines',
+                      value: notificationProvider.deadlineAlertsEnabled,
+                      onChanged: notificationProvider.toggleDeadlineAlerts,
+                    ),
+                  ],
                 ),
-                _buildSwitchTile(
-                  'Task Reminders',
-                  'Get notified about upcoming tasks',
-                  _taskReminders,
-                  (value) => setState(() => _taskReminders = value),
+
+                const SizedBox(height: 16),
+
+                // Payment Notifications
+                _buildSectionCard(
+                  context,
+                  title: 'Payment Notifications',
+                  children: [
+                    _buildSwitchTile(
+                      context,
+                      title: 'Payment Reminders',
+                      subtitle: 'Get reminded about pending payments',
+                      value: notificationProvider.paymentRemindersEnabled,
+                      onChanged: notificationProvider.togglePaymentReminders,
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Test Notifications
+                _buildSectionCard(
+                  context,
+                  title: 'Test Notifications',
+                  children: [
+                    _buildActionTile(
+                      context,
+                      title: 'Test General Notification',
+                      subtitle: 'Send a test notification',
+                      icon: Icons.notifications,
+                      onTap: () =>
+                          _testGeneralNotification(notificationProvider),
+                    ),
+                    _buildActionTile(
+                      context,
+                      title: 'Test Project Reminder',
+                      subtitle: 'Send a test project reminder',
+                      icon: Icons.work,
+                      onTap: () => _testProjectReminder(notificationProvider),
+                    ),
+                    _buildActionTile(
+                      context,
+                      title: 'Test Deadline Alert',
+                      subtitle: 'Send a test deadline alert',
+                      icon: Icons.schedule,
+                      onTap: () => _testDeadlineAlert(notificationProvider),
+                    ),
+                    _buildActionTile(
+                      context,
+                      title: 'Test Payment Reminder',
+                      subtitle: 'Send a test payment reminder',
+                      icon: Icons.payment,
+                      onTap: () => _testPaymentReminder(notificationProvider),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Notification Management
+                _buildSectionCard(
+                  context,
+                  title: 'Notification Management',
+                  children: [
+                    _buildActionTile(
+                      context,
+                      title: 'Clear All Notifications',
+                      subtitle: 'Remove all pending notifications',
+                      icon: Icons.clear_all,
+                      onTap: () => _clearAllNotifications(notificationProvider),
+                    ),
+                    _buildActionTile(
+                      context,
+                      title: 'View Pending Notifications',
+                      subtitle: 'See scheduled notifications',
+                      icon: Icons.schedule,
+                      onTap: () =>
+                          _viewPendingNotifications(notificationProvider),
+                    ),
+                  ],
                 ),
               ],
             ),
-
-            const SizedBox(height: 24),
-
-            // Communication
-            _buildSectionCard(
-              title: 'Communication',
-              icon: Icons.message,
-              color: Colors.green,
-              children: [
-                _buildSwitchTile(
-                  'Client Updates',
-                  'Notifications about client activities',
-                  _clientUpdates,
-                  (value) => setState(() => _clientUpdates = value),
-                ),
-                _buildSwitchTile(
-                  'System Updates',
-                  'Important app updates and maintenance',
-                  _systemUpdates,
-                  (value) => setState(() => _systemUpdates = value),
-                ),
-                _buildSwitchTile(
-                  'Marketing Emails',
-                  'Product updates and tips (optional)',
-                  _marketingEmails,
-                  (value) => setState(() => _marketingEmails = value),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // Timing Settings
-            _buildSectionCard(
-              title: 'Timing Settings',
-              icon: Icons.schedule,
-              color: Colors.orange,
-              children: [
-                _buildListTile(
-                  'Daily Reminder Time',
-                  'Choose when to receive daily notifications',
-                  _reminderTime,
-                  Icons.access_time,
-                  () => _selectReminderTime(),
-                ),
-                _buildSwitchTile(
-                  'Weekend Notifications',
-                  'Receive notifications on weekends',
-                  _weekendNotifications,
-                  (value) => setState(() => _weekendNotifications = value),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // Notification Types
-            _buildSectionCard(
-              title: 'Notification Types',
-              icon: Icons.notifications,
-              color: Colors.purple,
-              children: [
-                _buildNotificationTypeTile(
-                  'Push Notifications',
-                  'Show notifications on your device',
-                  true,
-                ),
-                _buildNotificationTypeTile(
-                  'Email Notifications',
-                  'Send notifications via email',
-                  true,
-                ),
-                _buildNotificationTypeTile(
-                  'SMS Notifications',
-                  'Send notifications via SMS',
-                  false,
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // Test Notifications
-            _buildTestSection(),
-
-            const SizedBox(height: 24),
-
-            // Save Button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _saveSettings,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Save Settings',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildSectionCard({
+  Widget _buildSectionCard(
+    BuildContext context, {
     required String title,
-    required IconData icon,
-    required Color color,
     required List<Widget> children,
   }) {
     return Card(
@@ -180,24 +174,12 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(icon, color: color),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
             const SizedBox(height: 16),
             ...children,
@@ -208,11 +190,12 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
   }
 
   Widget _buildSwitchTile(
-    String title,
-    String subtitle,
-    bool value,
-    ValueChanged<bool> onChanged,
-  ) {
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required bool value,
+    required Function(bool) onChanged,
+  }) {
     return SwitchListTile(
       title: Text(title),
       subtitle: Text(subtitle),
@@ -222,147 +205,144 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
     );
   }
 
-  Widget _buildListTile(
-    String title,
-    String subtitle,
-    String trailing,
-    IconData icon,
-    VoidCallback onTap,
-  ) {
+  Widget _buildActionTile(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
     return ListTile(
       leading: Icon(icon),
       title: Text(title),
       subtitle: Text(subtitle),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(trailing),
-          const SizedBox(width: 8),
-          const Icon(Icons.arrow_forward_ios, size: 16),
-        ],
-      ),
+      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       onTap: onTap,
       contentPadding: EdgeInsets.zero,
     );
   }
 
-  Widget _buildNotificationTypeTile(
-    String title,
-    String subtitle,
-    bool enabled,
-  ) {
+  Widget _buildInfoTile(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required IconData icon,
+  }) {
     return ListTile(
+      leading: Icon(icon),
       title: Text(title),
-      subtitle: Text(subtitle),
-      trailing: Switch(
-        value: enabled,
-        onChanged: (value) {
-          // Handle notification type toggle
-        },
+      subtitle: Text(
+        subtitle,
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
       ),
       contentPadding: EdgeInsets.zero,
     );
   }
 
-  Widget _buildTestSection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.science,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Test Notifications',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Send a test notification to make sure everything is working correctly.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _sendTestNotification,
-                    icon: const Icon(Icons.send),
-                    label: const Text('Send Test'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _sendTestEmail,
-                    icon: const Icon(Icons.email),
-                    label: const Text('Test Email'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+  void _testGeneralNotification(NotificationProvider provider) {
+    provider.showGeneralNotification(
+      title: 'Test Notification',
+      message: 'This is a test notification from Clarity!',
+    );
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Test notification sent!')));
+  }
+
+  void _testProjectReminder(NotificationProvider provider) {
+    provider.showProjectReminder(
+      projectName: 'Test Project',
+      message: 'This is a test project reminder!',
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Test project reminder sent!')),
     );
   }
 
-  void _selectReminderTime() {
-    showTimePicker(
+  void _testDeadlineAlert(NotificationProvider provider) {
+    provider.showDeadlineAlert(
+      projectName: 'Test Project',
+      taskName: 'Test Task',
+      deadline: DateTime.now().add(const Duration(hours: 2)),
+    );
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Test deadline alert sent!')));
+  }
+
+  void _testPaymentReminder(NotificationProvider provider) {
+    provider.showPaymentReminder(
+      clientName: 'Test Client',
+      projectName: 'Test Project',
+      amount: 1500.00,
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Test payment reminder sent!')),
+    );
+  }
+
+  void _clearAllNotifications(NotificationProvider provider) {
+    showDialog(
       context: context,
-      initialTime: TimeOfDay.fromDateTime(
-        DateTime.parse('2024-01-01 $_reminderTime:00'),
-      ),
-    ).then((time) {
-      if (time != null) {
-        setState(() {
-          _reminderTime = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
-        });
-      }
-    });
-  }
-
-  void _sendTestNotification() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Test notification sent!'),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
-
-  void _sendTestEmail() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Test email sent!'),
-        backgroundColor: Colors.green,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear All Notifications'),
+        content: const Text(
+          'Are you sure you want to clear all pending notifications?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              provider.cancelAllNotifications();
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('All notifications cleared!')),
+              );
+            },
+            child: const Text('Clear'),
+          ),
+        ],
       ),
     );
   }
 
-  void _saveSettings() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Notification settings saved!'),
-        backgroundColor: Colors.green,
+  void _viewPendingNotifications(NotificationProvider provider) async {
+    final pending = await provider.getPendingNotifications();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Pending Notifications'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: pending.length,
+            itemBuilder: (context, index) {
+              final notification = pending[index];
+              return ListTile(
+                title: Text(notification.title ?? 'No title'),
+                subtitle: Text(notification.body ?? 'No body'),
+                trailing: Text('ID: ${notification.id}'),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
       ),
     );
   }
