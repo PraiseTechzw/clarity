@@ -53,7 +53,10 @@ class ClarityApp extends StatelessWidget {
             final projectProvider = ProjectProvider();
             // Set the sync provider reference after both are created
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              final syncProvider = Provider.of<SyncProvider>(context, listen: false);
+              final syncProvider = Provider.of<SyncProvider>(
+                context,
+                listen: false,
+              );
               projectProvider.setSyncProvider(syncProvider);
             });
             return projectProvider;
