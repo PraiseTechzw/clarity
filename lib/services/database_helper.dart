@@ -20,7 +20,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'clarity.db');
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onDowngrade: _onDowngrade,
@@ -89,6 +89,7 @@ class DatabaseHelper {
         date TEXT NOT NULL,
         notes TEXT,
         reference TEXT,
+        status TEXT NOT NULL DEFAULT 'paid',
         FOREIGN KEY (projectId) REFERENCES projects (id) ON DELETE CASCADE
       )
     ''');
@@ -158,6 +159,16 @@ class DatabaseHelper {
         'clients',
         'projectIds',
         'TEXT DEFAULT "[]"',
+      );
+    }
+    
+    if (oldVersion < 3) {
+      // Add status column to payments table
+      await _addColumnIfNotExists(
+        db,
+        'payments',
+        'status',
+        'TEXT NOT NULL DEFAULT "paid"',
       );
     }
   }
