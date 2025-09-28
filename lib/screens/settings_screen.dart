@@ -119,7 +119,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 32),
 
                       // Account Settings
-                      _buildEnhancedSectionTitle('Account', Icons.account_circle),
+                      _buildEnhancedSectionTitle(
+                        'Account',
+                        Icons.account_circle,
+                      ),
                       const SizedBox(height: 12),
                       _buildEnhancedSettingsCard([
                         _buildEnhancedSettingsTile(
@@ -179,7 +182,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primaryContainer,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.primaryContainer,
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Row(
@@ -188,15 +193,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     Icon(
                                       themeProvider.getThemeIcon(),
                                       size: 16,
-                                      color: Theme.of(context).colorScheme.primary,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
                                       themeProvider.getThemeDisplayName(),
-                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: Theme.of(context).colorScheme.primary,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                     ),
                                   ],
                                 ),
@@ -234,7 +246,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 32),
 
                       // Data & Storage
-                      _buildEnhancedSectionTitle('Data & Storage', Icons.storage),
+                      _buildEnhancedSectionTitle(
+                        'Data & Storage',
+                        Icons.storage,
+                      ),
                       const SizedBox(height: 12),
                       _buildEnhancedSettingsCard([
                         _buildEnhancedSyncSettingsTile(),
@@ -246,7 +261,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => const BackupRestoreScreen(),
+                                builder: (context) =>
+                                    const BackupRestoreScreen(),
                               ),
                             );
                           },
@@ -274,14 +290,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 32),
 
                       // Support & Info
-                      _buildEnhancedSectionTitle('Support & Info', Icons.help_outline),
+                      _buildEnhancedSectionTitle(
+                        'Support & Info',
+                        Icons.help_outline,
+                      ),
                       const SizedBox(height: 12),
                       _buildEnhancedSettingsCard([
                         _buildEnhancedSettingsTile(
                           icon: Icons.help_outline,
                           title: 'Help & Support',
                           subtitle: 'Get help and contact support',
-                          gradient: [Colors.lightBlue, Colors.lightBlue.shade300],
+                          gradient: [
+                            Colors.lightBlue,
+                            Colors.lightBlue.shade300,
+                          ],
                           onTap: () {
                             _showHelpDialog();
                           },
@@ -290,7 +312,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           icon: Icons.bug_report_outlined,
                           title: 'Report a Bug',
                           subtitle: 'Help us improve the app',
-                          gradient: [Colors.deepOrange, Colors.deepOrange.shade300],
+                          gradient: [
+                            Colors.deepOrange,
+                            Colors.deepOrange.shade300,
+                          ],
                           onTap: () {
                             _showBugReportDialog();
                           },
@@ -365,7 +390,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withOpacity(0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -400,7 +427,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 6),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: authProvider.isAuthenticated
                           ? Colors.green.withOpacity(0.1)
@@ -452,65 +482,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildUserSection(AuthProvider authProvider) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 30,
-              backgroundColor: Theme.of(
-                context,
-              ).colorScheme.primary.withOpacity(0.1),
-              child: Text(
-                authProvider.userName?.isNotEmpty == true
-                    ? authProvider.userName![0].toUpperCase()
-                    : 'U',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    authProvider.userName ?? 'Guest User',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    authProvider.userEmail ?? 'Not signed in',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            IconButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const ProfileScreen(),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.edit),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildEnhancedSectionTitle(String title, IconData icon) {
     return Row(
       children: [
@@ -534,11 +505,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ],
           ),
-          child: Icon(
-            icon,
-            color: Colors.white,
-            size: 20,
-          ),
+          child: Icon(icon, color: Colors.white, size: 20),
         ),
         const SizedBox(width: 12),
         Text(
@@ -636,11 +603,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ],
                   ),
-                  child: Icon(
-                    icon,
-                    color: Colors.white,
-                    size: 24,
-                  ),
+                  child: Icon(icon, color: Colors.white, size: 24),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -649,10 +612,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     children: [
                       Text(
                         title,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -707,9 +671,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: 'Cloud Sync',
           subtitle: syncProvider.isSignedIn
               ? syncProvider.isOnline
-                  ? 'Synced and online'
-                  : 'Offline mode'
-              : 'Not signed in',
+                    ? 'Synced and online'
+                    : 'Offline mode'
+              : 'Sign in to sync',
           gradient: syncProvider.isSignedIn
               ? [Colors.blue, Colors.blue.shade300]
               : [Colors.grey, Colors.grey.shade400],
@@ -770,6 +734,123 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildEnhancedSignInSection() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.orange.withOpacity(0.1),
+            Colors.orange.withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.orange.withOpacity(0.2), width: 1),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Colors.orange, Colors.orange.shade300],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.orange.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.cloud_off,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    'Sign In to Sync',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Sign in to sync your data across devices and access cloud backup features.',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Colors.orange, Colors.orange.shade300],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.orange.withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const LoginScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.login, color: Colors.white),
+                  label: const Text(
+                    'Sign In',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildSignInSection() {
     return Card(
       child: Padding(
@@ -819,6 +900,114 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEnhancedSignOutButton(AuthProvider authProvider) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.red.withOpacity(0.1), Colors.red.withOpacity(0.05)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.red.withOpacity(0.2), width: 1),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Colors.red, Colors.red.shade300],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.red.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.logout,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    'Sign Out',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Sign out of your account to secure your data.',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Colors.red, Colors.red.shade300],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.red.withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: ElevatedButton.icon(
+                  onPressed: () => _showSignOutDialog(authProvider),
+                  icon: const Icon(Icons.logout, color: Colors.white),
+                  label: const Text(
+                    'Sign Out',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                 ),
               ),

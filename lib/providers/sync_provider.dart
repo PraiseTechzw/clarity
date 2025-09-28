@@ -2,9 +2,11 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/cloud_sync_service.dart';
 import '../models/project.dart';
+import 'auth_provider.dart';
 
 class SyncProvider extends ChangeNotifier {
   final CloudSyncService _cloudSyncService = CloudSyncService();
+  AuthProvider? _authProvider;
 
   bool _isInitialized = false;
   bool _isSyncing = false;
@@ -20,10 +22,24 @@ class SyncProvider extends ChangeNotifier {
   DateTime? get lastSyncTime => _lastSyncTime;
   String get syncStatus => _syncStatus;
   Map<String, bool> get syncResults => _syncResults;
-  bool get isSignedIn => _cloudSyncService.isSignedIn;
+  bool get isSignedIn =>
+      _authProvider?.isAuthenticated ?? _cloudSyncService.isSignedIn;
 
   SyncProvider() {
     _initialize();
+  }
+
+  /// Set the AuthProvider reference
+  void setAuthProvider(AuthProvider authProvider) {
+    _authProvider = authProvider;
+    // Listen to auth changes
+    _authProvider!.addListener(_onAuthStateChanged);
+    notifyListeners();
+  }
+
+  /// Handle auth state changes
+  void _onAuthStateChanged() {
+    notifyListeners();
   }
 
   /// Initialize sync provider
@@ -41,6 +57,12 @@ class SyncProvider extends ChangeNotifier {
       _updateSyncStatus('Error: $e');
       notifyListeners();
     }
+  }
+
+  @override
+  void dispose() {
+    _authProvider?.removeListener(_onAuthStateChanged);
+    super.dispose();
   }
 
   /// Load last sync time from preferences

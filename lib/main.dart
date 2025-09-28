@@ -30,7 +30,20 @@ class ClarityApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => AuthProvider()),
-        ChangeNotifierProvider(create: (context) => SyncProvider()),
+        ChangeNotifierProvider(
+          create: (context) {
+            final syncProvider = SyncProvider();
+            // Set the auth provider reference after both are created
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final authProvider = Provider.of<AuthProvider>(
+                context,
+                listen: false,
+              );
+              syncProvider.setAuthProvider(authProvider);
+            });
+            return syncProvider;
+          },
+        ),
         ChangeNotifierProvider(create: (context) => ProjectProvider()),
         ChangeNotifierProvider(create: (context) => NotificationProvider()),
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
