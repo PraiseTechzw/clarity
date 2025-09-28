@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'providers/project_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/notification_provider.dart';
@@ -14,6 +15,9 @@ import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables
+  await dotenv.load(fileName: ".env");
 
   // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -44,7 +48,17 @@ class ClarityApp extends StatelessWidget {
             return syncProvider;
           },
         ),
-        ChangeNotifierProvider(create: (context) => ProjectProvider()),
+        ChangeNotifierProvider(
+          create: (context) {
+            final projectProvider = ProjectProvider();
+            // Set the sync provider reference after both are created
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final syncProvider = Provider.of<SyncProvider>(context, listen: false);
+              projectProvider.setSyncProvider(syncProvider);
+            });
+            return projectProvider;
+          },
+        ),
         ChangeNotifierProvider(create: (context) => NotificationProvider()),
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
         ChangeNotifierProvider(create: (context) => LocaleProvider()),
