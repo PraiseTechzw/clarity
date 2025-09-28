@@ -161,7 +161,7 @@ class DatabaseHelper {
         'TEXT DEFAULT "[]"',
       );
     }
-    
+
     if (oldVersion < 3) {
       // Add status column to payments table
       await _addColumnIfNotExists(
