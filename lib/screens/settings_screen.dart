@@ -11,6 +11,7 @@ import 'profile_screen.dart';
 import 'backup_restore_screen.dart';
 import 'notifications_settings_screen.dart';
 import 'cloud_sync_screen.dart';
+import 'sync_settings_screen.dart';
 import 'about_screen.dart';
 
 extension StringExtension on String {
@@ -680,53 +681,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           trailing: SyncStatusIndicator(
             isSyncing: syncProvider.isSyncing,
             status: syncProvider.syncStatus,
-            isOnline: syncProvider.isOnline,
-            isSignedIn: syncProvider.isSignedIn,
           ),
           onTap: () {
             Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => const CloudSyncScreen()),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildSyncSettingsTile() {
-    return Consumer<SyncProvider>(
-      builder: (context, syncProvider, child) {
-        return ListTile(
-          leading: SyncAnimationWidget(
-            isSyncing: syncProvider.isSyncing,
-            status: syncProvider.syncStatus,
-            size: 24,
-            showText: false,
-          ),
-          title: const Text('Cloud Sync'),
-          subtitle: Text(
-            syncProvider.isSignedIn
-                ? syncProvider.isOnline
-                      ? 'Synced and online'
-                      : 'Offline mode'
-                : 'Not signed in',
-          ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SyncStatusIndicator(
-                isSyncing: syncProvider.isSyncing,
-                status: syncProvider.syncStatus,
-                isOnline: syncProvider.isOnline,
-                isSignedIn: syncProvider.isSignedIn,
+              MaterialPageRoute(
+                builder: (context) => const SyncSettingsScreen(),
               ),
-              const SizedBox(width: 8),
-              const Icon(Icons.arrow_forward_ios, size: 16),
-            ],
-          ),
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => const CloudSyncScreen()),
             );
           },
         );

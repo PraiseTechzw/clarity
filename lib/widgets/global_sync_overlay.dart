@@ -22,9 +22,9 @@ class GlobalSyncOverlay extends StatelessWidget {
               left: 0,
               right: 0,
               child: SyncProgressIndicator(
-                isVisible: syncProvider.isSyncing,
-                message: syncProvider.syncStatus,
-                progress: 0.0, // You can implement progress tracking if needed
+                progress: syncProvider.syncProgress,
+                status: syncProvider.syncStatus,
+                isActive: syncProvider.isSyncing,
               ),
             );
           },
@@ -57,8 +57,6 @@ class SyncStatusBar extends StatelessWidget {
               SyncStatusIndicator(
                 isSyncing: syncProvider.isSyncing,
                 status: syncProvider.syncStatus,
-                isOnline: syncProvider.isOnline,
-                isSignedIn: syncProvider.isSignedIn,
               ),
               const Spacer(),
               if (syncProvider.lastSyncTime != null)

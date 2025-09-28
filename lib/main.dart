@@ -9,6 +9,8 @@ import 'providers/notification_provider.dart';
 import 'providers/sync_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/locale_provider.dart';
+import 'services/network_service.dart';
+import 'services/offline_queue_service.dart';
 import 'screens/main_navigation.dart';
 import 'widgets/sync_initialization_widget.dart';
 import 'firebase_options.dart';
@@ -34,6 +36,8 @@ class ClarityApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => AuthProvider()),
+        ChangeNotifierProvider(create: (context) => NetworkService()),
+        ChangeNotifierProvider(create: (context) => OfflineQueueService()),
         ChangeNotifierProvider(
           create: (context) {
             final syncProvider = SyncProvider();

@@ -47,6 +47,9 @@ dependencies:
   # Environment Variables
   flutter_dotenv: ^5.1.0
   
+  # Network & Connectivity
+  connectivity_plus: ^5.0.2
+  
   # Authentication
   google_sign_in: ^7.2.0
   oauth2: ^2.0.3
@@ -70,6 +73,7 @@ dependencies:
   # Utilities
   intl: ^0.19.0
   uuid: ^4.5.1
+  fl_chart: ^1.1.1
 
 dev_dependencies:
   flutter_test:
@@ -78,8 +82,8 @@ dev_dependencies:
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
+  # package. To see which dependencies have newer
+  # versions available, run `flutter pub outdated`.
   flutter_lints: ^4.0.0
 
 # For information on the generic Dart part of this file, see the

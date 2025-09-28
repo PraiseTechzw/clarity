@@ -146,8 +146,6 @@ class ProjectCard extends StatelessWidget {
                 return SyncStatusIndicator(
                   isSyncing: syncProvider.isSyncing,
                   status: syncProvider.syncStatus,
-                  isOnline: syncProvider.isOnline,
-                  isSignedIn: syncProvider.isSignedIn,
                 );
               },
             ),
