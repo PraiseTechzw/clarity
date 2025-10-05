@@ -16,6 +16,8 @@ class Project {
   final List<Phase> phases;
   final List<Payment> payments;
   final List<Note> projectNotes;
+  final String? githubRepository;
+  final String? githubUrl;
 
   Project({
     required this.id,
@@ -29,6 +31,8 @@ class Project {
     this.phases = const [],
     this.payments = const [],
     this.projectNotes = const [],
+    this.githubRepository,
+    this.githubUrl,
   });
 
   double get totalPaid =>
@@ -82,6 +86,8 @@ class Project {
     List<Phase>? phases,
     List<Payment>? payments,
     List<Note>? projectNotes,
+    String? githubRepository,
+    String? githubUrl,
   }) {
     return Project(
       id: id ?? this.id,
@@ -95,6 +101,8 @@ class Project {
       phases: phases ?? this.phases,
       payments: payments ?? this.payments,
       projectNotes: projectNotes ?? this.projectNotes,
+      githubRepository: githubRepository ?? this.githubRepository,
+      githubUrl: githubUrl ?? this.githubUrl,
     );
   }
 
@@ -111,6 +119,8 @@ class Project {
       'phases': phases.map((phase) => phase.toJson()).toList(),
       'payments': payments.map((payment) => payment.toJson()).toList(),
       'projectNotes': projectNotes.map((note) => note.toJson()).toList(),
+      'githubRepository': githubRepository,
+      'githubUrl': githubUrl,
     };
   }
 
@@ -139,6 +149,8 @@ class Project {
               ?.map((note) => Note.fromJson(note))
               .toList() ??
           [],
+      githubRepository: json['githubRepository'],
+      githubUrl: json['githubUrl'],
     );
   }
 }

@@ -1,9 +1,12 @@
+import 'package:clarity/screens/github_integration_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../providers/project_provider.dart';
 import '../providers/sync_provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/notes_provider.dart';
+import '../providers/github_provider.dart';
 import '../services/network_service.dart';
 import 'suggestions_screen.dart';
 
@@ -98,6 +101,77 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard>
                             child: _buildPerformanceIndicators(
                               context,
                               projectProvider,
+                            ),
+                          ),
+
+                          // Intelligent Insights Section
+                          SliverToBoxAdapter(
+                            child: Consumer<NotesProvider>(
+                              builder: (context, notesProvider, child) {
+                                final insights = _generateIntelligentInsights(
+                                  projectProvider,
+                                  notesProvider,
+                                );
+
+                                if (insights.isEmpty) {
+                                  return const SizedBox.shrink();
+                                }
+
+                                return Container(
+                                  margin: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.psychology,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
+                                            size: 24,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            'Intelligent Insights',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleLarge
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Theme.of(
+                                                    context,
+                                                  ).colorScheme.primary,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 16),
+                                      ...insights.map(
+                                        (insight) =>
+                                            _buildInsightCard(context, insight),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+
+                          // GitHub Analytics Section
+                          SliverToBoxAdapter(
+                            child: Consumer<GitHubProvider>(
+                              builder: (context, githubProvider, child) {
+                                if (!githubProvider.isAuthenticated) {
+                                  return _buildGitHubConnectPrompt(context);
+                                }
+
+                                return _buildGitHubAnalyticsSection(
+                                  context,
+                                  githubProvider,
+                                );
+                              },
                             ),
                           ),
 
@@ -526,6 +600,1542 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard>
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInsightCard(BuildContext context, Map<String, dynamic> insight) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: insight['type'] == 'warning'
+            ? Colors.orange.withOpacity(0.1)
+            : insight['type'] == 'success'
+            ? Colors.green.withOpacity(0.1)
+            : Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: insight['type'] == 'warning'
+              ? Colors.orange.withOpacity(0.3)
+              : insight['type'] == 'success'
+              ? Colors.green.withOpacity(0.3)
+              : Theme.of(context).colorScheme.primary.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            insight['icon'],
+            color: insight['type'] == 'warning'
+                ? Colors.orange
+                : insight['type'] == 'success'
+                ? Colors.green
+                : Theme.of(context).colorScheme.primary,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  insight['title'],
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: insight['type'] == 'warning'
+                        ? Colors.orange.shade700
+                        : insight['type'] == 'success'
+                        ? Colors.green.shade700
+                        : Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  insight['description'],
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Map<String, dynamic>> _generateIntelligentInsights(
+    ProjectProvider projectProvider,
+    NotesProvider notesProvider,
+  ) {
+    final insights = <Map<String, dynamic>>[];
+    final projects = projectProvider.projects;
+    final notes = notesProvider.notes;
+
+    if (projects.isEmpty) {
+      return insights;
+    }
+
+    // Analyze project performance
+    final completedProjects = projects
+        .where((p) => p.progressPercentage >= 100)
+        .length;
+    final totalProjects = projects.length;
+    final completionRate = (completedProjects / totalProjects) * 100;
+
+    if (completionRate < 50) {
+      insights.add({
+        'type': 'warning',
+        'icon': Icons.trending_down,
+        'title': 'Low Project Completion Rate',
+        'description':
+            'Only ${completionRate.toStringAsFixed(1)}% of projects are completed. Consider reviewing project timelines and resources.',
+      });
+    } else if (completionRate >= 80) {
+      insights.add({
+        'type': 'success',
+        'icon': Icons.trending_up,
+        'title': 'Excellent Project Completion',
+        'description':
+            '${completionRate.toStringAsFixed(1)}% completion rate shows strong project management.',
+      });
+    }
+
+    // Analyze overdue projects
+    final now = DateTime.now();
+    final overdueProjects = projects
+        .where((p) => p.deadline.isBefore(now) && p.progressPercentage < 100)
+        .length;
+
+    if (overdueProjects > 0) {
+      insights.add({
+        'type': 'warning',
+        'icon': Icons.warning,
+        'title': 'Overdue Projects Detected',
+        'description':
+            '$overdueProjects project(s) are past their deadline. Immediate attention required.',
+      });
+    }
+
+    // Analyze revenue patterns
+    final totalRevenue = projects.fold(0.0, (sum, p) => sum + p.totalPaid);
+    final totalBudget = projects.fold(0.0, (sum, p) => sum + p.budget);
+    final revenueRatio = totalBudget > 0
+        ? (totalRevenue / totalBudget) * 100
+        : 0;
+
+    if (revenueRatio < 50) {
+      insights.add({
+        'type': 'warning',
+        'icon': Icons.attach_money,
+        'title': 'Low Revenue Collection',
+        'description':
+            'Only ${revenueRatio.toStringAsFixed(1)}% of budgeted revenue collected. Review payment schedules.',
+      });
+    } else if (revenueRatio >= 90) {
+      insights.add({
+        'type': 'success',
+        'icon': Icons.monetization_on,
+        'title': 'Strong Revenue Collection',
+        'description':
+            '${revenueRatio.toStringAsFixed(1)}% revenue collection shows excellent financial management.',
+      });
+    }
+
+    // Analyze notes productivity
+    if (notes.isNotEmpty) {
+      final recentNotes = notes
+          .where((n) => now.difference(n.createdAt).inDays <= 7)
+          .length;
+
+      if (recentNotes == 0) {
+        insights.add({
+          'type': 'info',
+          'icon': Icons.note_add,
+          'title': 'Low Note Activity',
+          'description':
+              'No notes created in the last 7 days. Consider documenting project progress and ideas.',
+        });
+      } else if (recentNotes >= 5) {
+        insights.add({
+          'type': 'success',
+          'icon': Icons.notes,
+          'title': 'Active Documentation',
+          'description':
+              '$recentNotes notes created this week. Great job staying organized!',
+        });
+      }
+    }
+
+    // Analyze project priority distribution
+    final highPriorityProjects = projects
+        .where((p) => p.priority == 'High')
+        .length;
+    if (highPriorityProjects > totalProjects * 0.6) {
+      insights.add({
+        'type': 'warning',
+        'icon': Icons.priority_high,
+        'title': 'Too Many High Priority Projects',
+        'description':
+            '${(highPriorityProjects / totalProjects * 100).toStringAsFixed(1)}% of projects are high priority. Consider rebalancing workload.',
+      });
+    }
+
+    // Analyze client distribution
+    final clients = projectProvider.clients;
+    if (clients.length > 1) {
+      final clientProjectCounts = <String, int>{};
+      for (final project in projects) {
+        final clientName = project.clientName;
+        clientProjectCounts[clientName] =
+            (clientProjectCounts[clientName] ?? 0) + 1;
+      }
+
+      final maxProjects = clientProjectCounts.values.reduce(
+        (a, b) => a > b ? a : b,
+      );
+      if (maxProjects > totalProjects * 0.5) {
+        insights.add({
+          'type': 'info',
+          'icon': Icons.business,
+          'title': 'Client Concentration Risk',
+          'description':
+              'One client represents ${(maxProjects / totalProjects * 100).toStringAsFixed(1)}% of projects. Consider diversifying client base.',
+        });
+      }
+    }
+
+    return insights;
+  }
+
+  Widget _buildGitHubConnectPrompt(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+            Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.3),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+        ),
+      ),
+      child: Column(
+        children: [
+          Image.asset(
+            'assets/github.png',
+            width: 48,
+            height: 48,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Connect GitHub for Development Analytics',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Track your development progress, commits, and repository activity to get comprehensive project insights.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => GitHubIntegrationScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.link),
+            label: const Text('Connect GitHub'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGitHubAnalyticsSection(
+    BuildContext context,
+    GitHubProvider githubProvider,
+  ) {
+    final repositories = githubProvider.repositories;
+
+    if (repositories.isEmpty) {
+      return Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.1),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.folder_open,
+                size: 48,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'No Repositories Found',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Connect to GitHub and load your repositories to see comprehensive development analytics.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () {
+                githubProvider.loadRepositories();
+              },
+              icon: const Icon(Icons.refresh),
+              label: const Text('Load Repositories'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with GitHub icon and title
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  Theme.of(
+                    context,
+                  ).colorScheme.secondaryContainer.withValues(alpha: 0.3),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.2),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Image.asset(
+                    'assets/github.png',
+                    width: 28,
+                    height: 28,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'GitHub Development Analytics',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Comprehensive insights into your development activity',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: () {
+                    githubProvider.loadRepositories();
+                  },
+                  icon: const Icon(Icons.refresh),
+                  tooltip: 'Refresh Data',
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Intelligent GitHub Insights
+          _buildGitHubIntelligentInsights(context, githubProvider),
+          const SizedBox(height: 20),
+
+          // Repository Stats Grid
+          _buildGitHubStatsGrid(context, repositories),
+          const SizedBox(height: 20),
+
+          // Development Activity Charts
+          _buildGitHubActivityCharts(context, githubProvider),
+          const SizedBox(height: 20),
+
+          // Repository List with Advanced Features
+          _buildGitHubRepositoryList(context, repositories),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGitHubIntelligentInsights(
+    BuildContext context,
+    GitHubProvider githubProvider,
+  ) {
+    final intelligentInsights = githubProvider.getIntelligentInsights();
+    final repositories = githubProvider.repositories;
+
+    if (repositories.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Theme.of(
+              context,
+            ).colorScheme.primaryContainer.withValues(alpha: 0.1),
+            Theme.of(
+              context,
+            ).colorScheme.secondaryContainer.withValues(alpha: 0.1),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.psychology,
+                color: Theme.of(context).colorScheme.primary,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Intelligent GitHub Insights',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Overall Score Card
+          _buildOverallScoreCard(context, intelligentInsights),
+          const SizedBox(height: 16),
+
+          // Insights
+          if ((intelligentInsights['insights'] as List).isNotEmpty) ...[
+            Text(
+              'Development Insights',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...(intelligentInsights['insights'] as List).map(
+              (insight) => _buildGitHubInsightCard(context, {
+                'type': 'info',
+                'icon': Icons.lightbulb_outline,
+                'title': 'Insight',
+                'description': insight,
+              }),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // Recommendations
+          if ((intelligentInsights['recommendations'] as List).isNotEmpty) ...[
+            Text(
+              'Recommendations',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.secondary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...(intelligentInsights['recommendations'] as List).map(
+              (recommendation) => _buildGitHubInsightCard(context, {
+                'type': 'success',
+                'icon': Icons.trending_up,
+                'title': 'Recommendation',
+                'description': recommendation,
+              }),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOverallScoreCard(
+    BuildContext context,
+    Map<String, dynamic> intelligentInsights,
+  ) {
+    final overallScore = intelligentInsights['overallScore'] as int;
+    final metrics = intelligentInsights['metrics'] as Map<String, dynamic>;
+
+    Color scoreColor;
+    String scoreLabel;
+    if (overallScore >= 80) {
+      scoreColor = Colors.green;
+      scoreLabel = 'Excellent';
+    } else if (overallScore >= 60) {
+      scoreColor = Colors.orange;
+      scoreLabel = 'Good';
+    } else if (overallScore >= 40) {
+      scoreColor = Colors.amber;
+      scoreLabel = 'Fair';
+    } else {
+      scoreColor = Colors.red;
+      scoreLabel = 'Needs Improvement';
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            scoreColor.withValues(alpha: 0.1),
+            scoreColor.withValues(alpha: 0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: scoreColor.withValues(alpha: 0.3), width: 1),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Development Score',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: scoreColor.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  scoreLabel,
+                  style: TextStyle(
+                    color: scoreColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  children: [
+                    Text(
+                      '$overallScore',
+                      style: Theme.of(context).textTheme.headlineLarge
+                          ?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: scoreColor,
+                            fontSize: 48,
+                          ),
+                    ),
+                    Text(
+                      'out of 100',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildMetricRow(
+                      context,
+                      'Repositories',
+                      '${metrics['totalRepositories']}',
+                    ),
+                    _buildMetricRow(
+                      context,
+                      'Active Repos',
+                      '${metrics['activeRepositories']}',
+                    ),
+                    _buildMetricRow(
+                      context,
+                      'Languages',
+                      '${metrics['languagesUsed']}',
+                    ),
+                    _buildMetricRow(
+                      context,
+                      'Total Stars',
+                      '${metrics['totalStars']}',
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricRow(BuildContext context, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGitHubInsightCard(
+    BuildContext context,
+    Map<String, dynamic> insight,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: insight['type'] == 'warning'
+            ? Colors.orange.withValues(alpha: 0.1)
+            : insight['type'] == 'success'
+            ? Colors.green.withValues(alpha: 0.1)
+            : insight['type'] == 'info'
+            ? Colors.blue.withValues(alpha: 0.1)
+            : Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: insight['type'] == 'warning'
+              ? Colors.orange.withValues(alpha: 0.3)
+              : insight['type'] == 'success'
+              ? Colors.green.withValues(alpha: 0.3)
+              : insight['type'] == 'info'
+              ? Colors.blue.withValues(alpha: 0.3)
+              : Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            insight['icon'],
+            color: insight['type'] == 'warning'
+                ? Colors.orange
+                : insight['type'] == 'success'
+                ? Colors.green
+                : insight['type'] == 'info'
+                ? Colors.blue
+                : Theme.of(context).colorScheme.primary,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  insight['title'],
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: insight['type'] == 'warning'
+                        ? Colors.orange.shade700
+                        : insight['type'] == 'success'
+                        ? Colors.green.shade700
+                        : insight['type'] == 'info'
+                        ? Colors.blue.shade700
+                        : Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  insight['description'],
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                if (insight['action'] != null) ...[
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    onPressed: insight['action'],
+                    icon: Icon(
+                      insight['actionIcon'] ?? Icons.arrow_forward,
+                      size: 16,
+                    ),
+                    label: Text(insight['actionText'] ?? 'Learn More'),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Map<String, dynamic>> _generateGitHubInsights(
+    List<dynamic> repositories,
+  ) {
+    final insights = <Map<String, dynamic>>[];
+
+    if (repositories.isEmpty) return insights;
+
+    // Analyze repository activity
+    final now = DateTime.now();
+    final recentRepos = repositories.where((repo) {
+      final updatedAt = DateTime.tryParse(repo.updatedAt ?? '');
+      if (updatedAt == null) return false;
+      return now.difference(updatedAt).inDays <= 30;
+    }).length;
+
+    if (recentRepos == 0) {
+      insights.add({
+        'type': 'warning',
+        'icon': Icons.schedule,
+        'title': 'Low Repository Activity',
+        'description':
+            'No repositories have been updated in the last 30 days. Consider reviewing your development workflow.',
+        'action': () {},
+        'actionIcon': Icons.refresh,
+        'actionText': 'Refresh Data',
+      });
+    } else if (recentRepos >= repositories.length * 0.8) {
+      insights.add({
+        'type': 'success',
+        'icon': Icons.trending_up,
+        'title': 'High Development Activity',
+        'description':
+            '${recentRepos} out of ${repositories.length} repositories have been recently updated. Great job staying active!',
+      });
+    }
+
+    // Analyze language diversity
+    final languages = <String, int>{};
+    for (final repo in repositories) {
+      if (repo.language != null && repo.language!.isNotEmpty) {
+        languages[repo.language!] = (languages[repo.language!] ?? 0) + 1;
+      }
+    }
+
+    if (languages.length == 1) {
+      insights.add({
+        'type': 'info',
+        'icon': Icons.code,
+        'title': 'Single Language Focus',
+        'description':
+            'All repositories use ${languages.keys.first}. Consider diversifying your tech stack for broader opportunities.',
+      });
+    } else if (languages.length >= 5) {
+      insights.add({
+        'type': 'success',
+        'icon': Icons.language,
+        'title': 'Diverse Tech Stack',
+        'description':
+            'You\'re working with ${languages.length} different programming languages. This shows great versatility!',
+      });
+    }
+
+    // Analyze repository size and complexity
+    final totalStars = repositories.fold<int>(
+      0,
+      (sum, repo) => sum + ((repo.stars ?? 0) as num).toInt(),
+    );
+    final avgStars = repositories.isNotEmpty
+        ? totalStars / repositories.length
+        : 0.0;
+
+    if (avgStars > 50) {
+      insights.add({
+        'type': 'success',
+        'icon': Icons.star,
+        'title': 'High-Quality Repositories',
+        'description':
+            'Your repositories average ${avgStars.toStringAsFixed(1)} stars, indicating high community interest.',
+      });
+    } else if (avgStars < 5) {
+      insights.add({
+        'type': 'info',
+        'icon': Icons.visibility,
+        'title': 'Growing Your Presence',
+        'description':
+            'Consider adding documentation, README files, and contributing to open source to increase repository visibility.',
+        'action': () {},
+        'actionIcon': Icons.edit_document,
+        'actionText': 'Improve Documentation',
+      });
+    }
+
+    // Analyze private vs public repositories
+    final privateRepos = repositories
+        .where((repo) => repo.isPrivate == true)
+        .length;
+    final publicRepos = repositories.length - privateRepos;
+
+    if (publicRepos == 0) {
+      insights.add({
+        'type': 'info',
+        'icon': Icons.public,
+        'title': 'All Private Repositories',
+        'description':
+            'Consider open-sourcing some projects to showcase your work and contribute to the community.',
+      });
+    } else if (publicRepos >= repositories.length * 0.7) {
+      insights.add({
+        'type': 'success',
+        'icon': Icons.share,
+        'title': 'Open Source Advocate',
+        'description':
+            '${publicRepos} out of ${repositories.length} repositories are public. Great contribution to open source!',
+      });
+    }
+
+    // Analyze repository descriptions
+    final reposWithDescription = repositories.where((repo) {
+      return repo.description != null && repo.description.isNotEmpty;
+    }).length;
+
+    if (reposWithDescription < repositories.length * 0.5) {
+      insights.add({
+        'type': 'warning',
+        'icon': Icons.description,
+        'title': 'Missing Repository Descriptions',
+        'description':
+            'Only ${reposWithDescription} out of ${repositories.length} repositories have descriptions. Add descriptions to improve discoverability.',
+        'action': () {},
+        'actionIcon': Icons.edit,
+        'actionText': 'Add Descriptions',
+      });
+    }
+
+    return insights;
+  }
+
+  Widget _buildGitHubStatsGrid(
+    BuildContext context,
+    List<dynamic> repositories,
+  ) {
+    final totalStars = repositories.fold<int>(
+      0,
+      (sum, repo) => sum + ((repo.stars ?? 0) as num).toInt(),
+    );
+    final totalForks = repositories.fold<int>(
+      0,
+      (sum, repo) => sum + ((repo.forks ?? 0) as num).toInt(),
+    );
+    final totalIssues = repositories.fold<int>(
+      0,
+      (sum, repo) => sum + ((repo.openIssuesCount ?? 0) as num).toInt(),
+    );
+    final languages = <String, int>{};
+
+    for (final repo in repositories) {
+      if (repo.language != null && repo.language!.isNotEmpty) {
+        languages[repo.language!] = (languages[repo.language!] ?? 0) + 1;
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Repository Statistics',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 16),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          childAspectRatio: 1.3,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          children: [
+            _buildGitHubStatCard(
+              context,
+              'Repositories',
+              repositories.length.toString(),
+              Icons.folder,
+              Theme.of(context).colorScheme.primary,
+              'Total repositories',
+            ),
+            _buildGitHubStatCard(
+              context,
+              'Total Stars',
+              totalStars.toString(),
+              Icons.star,
+              Colors.amber,
+              'Community recognition',
+            ),
+            _buildGitHubStatCard(
+              context,
+              'Total Forks',
+              totalForks.toString(),
+              Icons.fork_right,
+              Colors.green,
+              'Project forks',
+            ),
+            _buildGitHubStatCard(
+              context,
+              'Open Issues',
+              totalIssues.toString(),
+              Icons.bug_report,
+              Colors.red,
+              'Issues to resolve',
+            ),
+            _buildGitHubStatCard(
+              context,
+              'Languages',
+              languages.length.toString(),
+              Icons.code,
+              Colors.purple,
+              'Tech diversity',
+            ),
+            _buildGitHubStatCard(
+              context,
+              'Avg. Stars',
+              (totalStars / repositories.length).toStringAsFixed(1),
+              Icons.trending_up,
+              Colors.blue,
+              'Per repository',
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGitHubStatCard(
+    BuildContext context,
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+    String subtitle,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [color.withValues(alpha: 0.1), color.withValues(alpha: 0.05)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 24, color: color),
+          ),
+          const SizedBox(height: 12),
+          Flexible(
+            child: Text(
+              value,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: color,
+                fontSize: 20,
+              ),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Flexible(
+            child: Text(
+              title,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Flexible(
+            child: Text(
+              subtitle,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 10,
+              ),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGitHubActivityCharts(
+    BuildContext context,
+    GitHubProvider githubProvider,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Development Activity',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildGitHubActivityCard(
+                context,
+                'Language Distribution',
+                _buildLanguageDistributionChart(context, githubProvider),
+                Icons.pie_chart,
+                Colors.blue,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildGitHubActivityCard(
+                context,
+                'Repository Size',
+                _buildRepositorySizeChart(context, githubProvider),
+                Icons.storage,
+                Colors.green,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGitHubActivityCard(
+    BuildContext context,
+    String title,
+    Widget chart,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [color.withValues(alpha: 0.1), color.withValues(alpha: 0.05)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(height: 120, child: chart),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLanguageDistributionChart(
+    BuildContext context,
+    GitHubProvider githubProvider,
+  ) {
+    final repositories = githubProvider.repositories;
+    final languages = <String, int>{};
+
+    for (final repo in repositories) {
+      if (repo.language != null && repo.language!.isNotEmpty) {
+        languages[repo.language!] = (languages[repo.language!] ?? 0) + 1;
+      }
+    }
+
+    if (languages.isEmpty) {
+      return Center(
+        child: Text(
+          'No language data',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
+
+    final sortedLanguages = languages.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return PieChart(
+      PieChartData(
+        sections: sortedLanguages.take(5).map((entry) {
+          final colors = [
+            Colors.blue,
+            Colors.green,
+            Colors.orange,
+            Colors.purple,
+            Colors.red,
+          ];
+          final index = sortedLanguages.indexOf(entry);
+          return PieChartSectionData(
+            color: colors[index % colors.length],
+            value: entry.value.toDouble(),
+            title: '${entry.key}\n${entry.value}',
+            radius: 40,
+            titleStyle: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          );
+        }).toList(),
+        centerSpaceRadius: 20,
+        sectionsSpace: 2,
+      ),
+    );
+  }
+
+  Widget _buildRepositorySizeChart(
+    BuildContext context,
+    GitHubProvider githubProvider,
+  ) {
+    final repositories = githubProvider.repositories;
+
+    if (repositories.isEmpty) {
+      return Center(
+        child: Text(
+          'No repository data',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
+
+    // Group repositories by size (stars)
+    final smallRepos = repositories.where((r) => (r.stars ?? 0) < 10).length;
+    final mediumRepos = repositories.where((r) {
+      final stars = r.stars ?? 0;
+      return stars >= 10 && stars < 100;
+    }).length;
+    final largeRepos = repositories.where((r) => (r.stars ?? 0) >= 100).length;
+
+    return BarChart(
+      BarChartData(
+        alignment: BarChartAlignment.spaceAround,
+        maxY:
+            [
+              smallRepos,
+              mediumRepos,
+              largeRepos,
+            ].reduce((a, b) => a > b ? a : b).toDouble() +
+            1,
+        barTouchData: BarTouchData(enabled: false),
+        titlesData: FlTitlesData(
+          show: true,
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              getTitlesWidget: (value, meta) {
+                const labels = ['Small', 'Medium', 'Large'];
+                return Text(
+                  labels[value.toInt()],
+                  style: const TextStyle(fontSize: 10),
+                );
+              },
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              getTitlesWidget: (value, meta) {
+                return Text(
+                  value.toInt().toString(),
+                  style: const TextStyle(fontSize: 10),
+                );
+              },
+            ),
+          ),
+        ),
+        borderData: FlBorderData(show: false),
+        barGroups: [
+          BarChartGroupData(
+            x: 0,
+            barRods: [
+              BarChartRodData(
+                toY: smallRepos.toDouble(),
+                color: Colors.blue,
+                width: 20,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(4),
+                ),
+              ),
+            ],
+          ),
+          BarChartGroupData(
+            x: 1,
+            barRods: [
+              BarChartRodData(
+                toY: mediumRepos.toDouble(),
+                color: Colors.green,
+                width: 20,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(4),
+                ),
+              ),
+            ],
+          ),
+          BarChartGroupData(
+            x: 2,
+            barRods: [
+              BarChartRodData(
+                toY: largeRepos.toDouble(),
+                color: Colors.orange,
+                width: 20,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(4),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGitHubRepositoryList(
+    BuildContext context,
+    List<dynamic> repositories,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Repository Overview',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 16),
+        ...repositories
+            .take(5)
+            .map((repo) => _buildRepositoryCard(context, repo)),
+        if (repositories.length > 5) ...[
+          const SizedBox(height: 12),
+          Center(
+            child: TextButton(
+              onPressed: () {
+                // Navigate to full repository list
+              },
+              child: Text(
+                'View All ${repositories.length} Repositories',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildRepositoryCard(BuildContext context, dynamic repo) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Theme.of(
+              context,
+            ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+            Theme.of(
+              context,
+            ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              repo.isPrivate ? Icons.lock : Icons.public,
+              color: Theme.of(context).colorScheme.primary,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  repo.name,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (repo.description != null &&
+                    repo.description.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    repo.description,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    if (repo.language != null && repo.language.isNotEmpty) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          repo.language,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onPrimaryContainer,
+                                fontWeight: FontWeight.w500,
+                              ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Icon(Icons.star, size: 14, color: Colors.amber),
+                    const SizedBox(width: 4),
+                    Text(
+                      repo.stars.toString(),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Icon(
+                      Icons.fork_right,
+                      size: 14,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      repo.forks.toString(),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),

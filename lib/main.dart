@@ -9,6 +9,9 @@ import 'providers/notification_provider.dart';
 import 'providers/sync_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/locale_provider.dart';
+import 'providers/notes_provider.dart';
+import 'providers/github_provider.dart';
+import 'providers/budget_provider.dart';
 import 'services/network_service.dart';
 import 'services/offline_queue_service.dart';
 import 'screens/main_navigation.dart';
@@ -72,8 +75,29 @@ class ClarityApp extends StatelessWidget {
           },
         ),
         ChangeNotifierProvider(create: (context) => NotificationProvider()),
+        ChangeNotifierProvider(create: (context) => NotesProvider()),
+        ChangeNotifierProvider(
+          create: (context) {
+            final githubProvider = GitHubProvider();
+            // Initialize the provider to load saved token
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              githubProvider.initialize();
+            });
+            return githubProvider;
+          },
+        ),
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
         ChangeNotifierProvider(create: (context) => LocaleProvider()),
+        ChangeNotifierProvider(
+          create: (context) {
+            final budgetProvider = BudgetProvider();
+            // Initialize the provider to load saved data
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              budgetProvider.initialize();
+            });
+            return budgetProvider;
+          },
+        ),
       ],
       child: Consumer3<AuthProvider, ThemeProvider, LocaleProvider>(
         builder: (context, authProvider, themeProvider, localeProvider, child) {

@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/cloud_sync_service.dart';
 import '../services/network_service.dart';
 import '../models/project.dart';
+import '../screens/notes_screen.dart';
 import 'auth_provider.dart';
 
 class SyncProvider extends ChangeNotifier {
@@ -294,16 +295,39 @@ class SyncProvider extends ChangeNotifier {
   Future<Map<String, bool>> syncAllData({
     required List<Project> projects,
     required List<Client> clients,
+    List<QuickNote>? quickNotes,
+    Map<String, List<Note>>? projectNotes,
   }) async {
     if (!isSignedIn || !_isOnline) return {};
 
     _resetSyncState();
     _isSyncing = true;
+
+    // Calculate total items including notes
     _totalItems = projects.length + clients.length;
+    if (quickNotes != null) _totalItems += quickNotes.length;
+    if (projectNotes != null) {
+      _totalItems += projectNotes.values.fold(
+        0,
+        (sum, notes) => sum + notes.length,
+      );
+    }
+
     _updateSyncStatus('Syncing all data...');
     notifyListeners();
 
     try {
+      // Use enhanced sync if we have notes data
+      if (quickNotes != null || projectNotes != null) {
+        return await _syncAllDataEnhanced(
+          projects: projects,
+          clients: clients,
+          quickNotes: quickNotes ?? [],
+          projectNotes: projectNotes ?? {},
+        );
+      }
+
+      // Original sync for backward compatibility
       final results = <String, bool>{};
 
       // Sync projects
@@ -366,6 +390,39 @@ class SyncProvider extends ChangeNotifier {
     } finally {
       _isSyncing = false;
       notifyListeners();
+    }
+  }
+
+  /// Enhanced sync with all data types
+  Future<Map<String, bool>> _syncAllDataEnhanced({
+    required List<Project> projects,
+    required List<Client> clients,
+    required List<QuickNote> quickNotes,
+    required Map<String, List<Note>> projectNotes,
+  }) async {
+    try {
+      final results = await _cloudSyncService.syncAllDataEnhanced(
+        projects: projects,
+        clients: clients,
+        quickNotes: quickNotes,
+        projectNotes: projectNotes,
+      );
+
+      _syncResults = results;
+      _lastSyncTime = DateTime.now();
+      await _saveLastSyncTime();
+
+      final successCount = results.values.where((success) => success).length;
+      _updateSyncStatus('Synced $successCount/$_totalItems items');
+
+      return results;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error in enhanced sync: $e');
+      }
+      _addSyncError('Error in enhanced sync: $e');
+      _updateSyncStatus('Error: $e');
+      return {};
     }
   }
 
@@ -542,6 +599,258 @@ class SyncProvider extends ChangeNotifier {
       }
       _addSyncError('Error clearing cloud data: $e');
       _updateSyncStatus('Error: $e');
+    } finally {
+      _isSyncing = false;
+      notifyListeners();
+    }
+  }
+
+  /// Sync single quick note to cloud
+  Future<bool> syncQuickNote(QuickNote note) async {
+    if (!isSignedIn || !_isOnline) return false;
+
+    _isSyncing = true;
+    _updateSyncStatus('Syncing note: ${note.title}');
+    notifyListeners();
+
+    try {
+      final success = await _retrySync(
+        () => _cloudSyncService.syncQuickNote(note),
+      );
+      _syncResults['quickNote_${note.id}'] = success;
+
+      if (success) {
+        _completedItems++;
+        _lastSyncTime = DateTime.now();
+        await _saveLastSyncTime();
+        _updateSyncStatus('Note synced successfully');
+      } else {
+        _addSyncError('Failed to sync note: ${note.title}');
+        _updateSyncStatus('Failed to sync note');
+      }
+
+      _updateSyncProgress(
+        _totalItems > 0 ? _completedItems / _totalItems : 0.0,
+      );
+      return success;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error syncing quick note: $e');
+      }
+      _addSyncError('Error syncing note ${note.title}: $e');
+      _updateSyncStatus('Error: $e');
+      return false;
+    } finally {
+      _isSyncing = false;
+      notifyListeners();
+    }
+  }
+
+  /// Sync single project note to cloud
+  Future<bool> syncProjectNote(Note note, String projectId) async {
+    if (!isSignedIn || !_isOnline) return false;
+
+    _isSyncing = true;
+    _updateSyncStatus('Syncing project note: ${note.title}');
+    notifyListeners();
+
+    try {
+      final success = await _retrySync(
+        () => _cloudSyncService.syncProjectNote(note, projectId),
+      );
+      _syncResults['note_${note.id}'] = success;
+
+      if (success) {
+        _completedItems++;
+        _lastSyncTime = DateTime.now();
+        await _saveLastSyncTime();
+        _updateSyncStatus('Project note synced successfully');
+      } else {
+        _addSyncError('Failed to sync project note: ${note.title}');
+        _updateSyncStatus('Failed to sync project note');
+      }
+
+      _updateSyncProgress(
+        _totalItems > 0 ? _completedItems / _totalItems : 0.0,
+      );
+      return success;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error syncing project note: $e');
+      }
+      _addSyncError('Error syncing project note ${note.title}: $e');
+      _updateSyncStatus('Error: $e');
+      return false;
+    } finally {
+      _isSyncing = false;
+      notifyListeners();
+    }
+  }
+
+  /// Delete quick note from cloud
+  Future<bool> deleteQuickNote(String noteId) async {
+    if (!isSignedIn || !_isOnline) return false;
+
+    _isSyncing = true;
+    _updateSyncStatus('Deleting note from cloud...');
+    notifyListeners();
+
+    try {
+      final success = await _retrySync(
+        () => _cloudSyncService.deleteQuickNote(noteId),
+      );
+
+      if (success) {
+        _lastSyncTime = DateTime.now();
+        await _saveLastSyncTime();
+        _updateSyncStatus('Note deleted successfully');
+      } else {
+        _addSyncError('Failed to delete note');
+        _updateSyncStatus('Failed to delete note');
+      }
+
+      return success;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error deleting quick note: $e');
+      }
+      _addSyncError('Error deleting note: $e');
+      _updateSyncStatus('Error: $e');
+      return false;
+    } finally {
+      _isSyncing = false;
+      notifyListeners();
+    }
+  }
+
+  /// Delete project note from cloud
+  Future<bool> deleteProjectNote(String noteId, String projectId) async {
+    if (!isSignedIn || !_isOnline) return false;
+
+    _isSyncing = true;
+    _updateSyncStatus('Deleting project note from cloud...');
+    notifyListeners();
+
+    try {
+      final success = await _retrySync(
+        () => _cloudSyncService.deleteProjectNote(noteId, projectId),
+      );
+
+      if (success) {
+        _lastSyncTime = DateTime.now();
+        await _saveLastSyncTime();
+        _updateSyncStatus('Project note deleted successfully');
+      } else {
+        _addSyncError('Failed to delete project note');
+        _updateSyncStatus('Failed to delete project note');
+      }
+
+      return success;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error deleting project note: $e');
+      }
+      _addSyncError('Error deleting project note: $e');
+      _updateSyncStatus('Error: $e');
+      return false;
+    } finally {
+      _isSyncing = false;
+      notifyListeners();
+    }
+  }
+
+  /// Batch sync with progress tracking
+  Future<Map<String, dynamic>> batchSyncWithProgress({
+    required List<Project> projects,
+    required List<Client> clients,
+    required List<QuickNote> quickNotes,
+    required Map<String, List<Note>> projectNotes,
+  }) async {
+    if (!isSignedIn || !_isOnline) return {};
+
+    _resetSyncState();
+    _isSyncing = true;
+    _totalItems =
+        projects.length +
+        clients.length +
+        quickNotes.length +
+        projectNotes.values.fold(0, (sum, notes) => sum + notes.length);
+
+    _updateSyncStatus('Starting batch sync...');
+    notifyListeners();
+
+    try {
+      final result = await _cloudSyncService.batchSyncWithProgress(
+        projects: projects,
+        clients: clients,
+        quickNotes: quickNotes,
+        projectNotes: projectNotes,
+        onProgress: (progress, status) {
+          _updateSyncProgress(progress);
+          _updateSyncStatus(status);
+        },
+      );
+
+      _syncResults = Map<String, bool>.from(result['results'] ?? {});
+      _lastSyncTime = DateTime.now();
+      await _saveLastSyncTime();
+
+      // Add errors to sync errors
+      final errors = List<String>.from(result['errors'] ?? []);
+      for (final error in errors) {
+        _addSyncError(error);
+      }
+
+      _updateSyncStatus('Batch sync completed!');
+      return result;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error in batch sync: $e');
+      }
+      _addSyncError('Error in batch sync: $e');
+      _updateSyncStatus('Error: $e');
+      return {};
+    } finally {
+      _isSyncing = false;
+      notifyListeners();
+    }
+  }
+
+  /// Listen to quick notes changes from cloud
+  Stream<List<QuickNote>> listenToQuickNotes() {
+    if (!isSignedIn) return Stream.value([]);
+    return _cloudSyncService.listenToQuickNotes();
+  }
+
+  /// Listen to project notes changes from cloud
+  Stream<List<Note>> listenToProjectNotes(String projectId) {
+    if (!isSignedIn) return Stream.value([]);
+    return _cloudSyncService.listenToProjectNotes(projectId);
+  }
+
+  /// Download all data including notes
+  Future<Map<String, dynamic>> downloadAllDataEnhanced() async {
+    if (!isSignedIn || !_isOnline) return {};
+
+    _isSyncing = true;
+    _updateSyncStatus('Downloading all data from cloud...');
+    notifyListeners();
+
+    try {
+      final data = await _cloudSyncService.downloadAllDataEnhanced();
+
+      _lastSyncTime = DateTime.now();
+      await _saveLastSyncTime();
+
+      _updateSyncStatus('All data downloaded successfully');
+      return data;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error downloading enhanced data: $e');
+      }
+      _addSyncError('Error downloading enhanced data: $e');
+      _updateSyncStatus('Error: $e');
+      return {};
     } finally {
       _isSyncing = false;
       notifyListeners();

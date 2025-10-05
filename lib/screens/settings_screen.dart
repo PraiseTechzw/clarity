@@ -4,14 +4,16 @@ import '../providers/auth_provider.dart';
 import '../providers/sync_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/locale_provider.dart';
+import '../providers/github_provider.dart';
 import '../services/storage_service.dart';
 import '../widgets/sync_animation_widget.dart';
 import 'auth/login_screen.dart';
 import 'profile_screen.dart';
 import 'backup_restore_screen.dart';
 import 'notifications_settings_screen.dart';
-import 'cloud_sync_screen.dart';
 import 'sync_settings_screen.dart';
+import 'comprehensive_sync_screen.dart';
+import 'github_integration_screen.dart';
 import 'about_screen.dart';
 
 extension StringExtension on String {
@@ -254,6 +256,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 12),
                       _buildEnhancedSettingsCard([
                         _buildEnhancedSyncSettingsTile(),
+                        const SizedBox(height: 12),
+                        _buildComprehensiveSyncTile(),
+                        const SizedBox(height: 12),
+                        _buildGitHubIntegrationTile(),
                         _buildEnhancedSettingsTile(
                           icon: Icons.backup_outlined,
                           title: 'Backup & Restore',
@@ -686,6 +692,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (context) => const SyncSettingsScreen(),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildComprehensiveSyncTile() {
+    return Consumer<SyncProvider>(
+      builder: (context, syncProvider, child) {
+        return _buildEnhancedSettingsTile(
+          icon: Icons.sync_alt,
+          title: 'Full Sync Management',
+          subtitle: syncProvider.isSignedIn
+              ? 'Manage all sync operations'
+              : 'Sign in to access sync management',
+          gradient: syncProvider.isSignedIn
+              ? [Colors.purple, Colors.purple.shade300]
+              : [Colors.grey, Colors.grey.shade400],
+          trailing: Icon(
+            Icons.arrow_forward_ios,
+            size: 16,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const ComprehensiveSyncScreen(),
               ),
             );
           },
@@ -1363,6 +1398,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildGitHubIntegrationTile() {
+    return Consumer<GitHubProvider>(
+      builder: (context, githubProvider, child) {
+        return _buildEnhancedSettingsTile(
+          icon: Icons.code,
+          title: 'GitHub Integration',
+          subtitle: githubProvider.isAuthenticated
+              ? 'Connected to GitHub'
+              : 'Connect to GitHub for development tracking',
+          gradient: githubProvider.isAuthenticated
+              ? [Colors.green, Colors.green.shade300]
+              : [Colors.grey, Colors.grey.shade400],
+          trailing: Icon(
+            githubProvider.isAuthenticated
+                ? Icons.check_circle
+                : Icons.arrow_forward_ios,
+            size: 16,
+            color: githubProvider.isAuthenticated
+                ? Colors.green
+                : Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const GitHubIntegrationScreen(),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

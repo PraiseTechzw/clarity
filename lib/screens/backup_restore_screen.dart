@@ -114,9 +114,9 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
                 Consumer<SyncProvider>(
                   builder: (context, syncProvider, child) {
                     return _buildActionCard(
-                      'Import from Cloud',
+                  'Import from Cloud',
                       'Restore from your cloud backup.',
-                      Icons.cloud,
+                  Icons.cloud,
                       _isImporting || !syncProvider.isSignedIn
                           ? null
                           : () => _importFromCloud(),
@@ -258,12 +258,12 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
                       showText: false,
                     )
                   : Icon(
-                      icon,
+                icon,
                       color: isDisabled
                           ? Theme.of(context).colorScheme.onSurfaceVariant
                           : Theme.of(context).colorScheme.primary,
-                      size: 20,
-                    ),
+                size: 20,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -290,15 +290,15 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
               ),
             ),
             if (!isLoading)
-              Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
                 color: isDisabled
                     ? Theme.of(
                         context,
                       ).colorScheme.onSurfaceVariant.withOpacity(0.5)
                     : Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            ),
           ],
         ),
       ),
@@ -505,9 +505,9 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
           SnackBar(
             content: Text('Projects backup saved to: ${file.path}'),
             duration: const Duration(seconds: 5),
-          ),
-        );
-      }
+      ),
+    );
+  }
 
       // Add to history
       _addToHistory('Projects Backup', file.lengthSync());
@@ -567,9 +567,9 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
           SnackBar(
             content: Text('Clients backup saved to: ${file.path}'),
             duration: const Duration(seconds: 5),
-          ),
-        );
-      }
+      ),
+    );
+  }
 
       // Add to history
       _addToHistory('Clients Backup', file.lengthSync());
@@ -604,26 +604,26 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
     try {
       // For now, show a dialog to inform user about file import
       if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
             title: const Text('Import from File'),
-            content: const Text(
+        content: const Text(
               'File import functionality requires additional packages. '
               'For now, you can use cloud sync to restore your data.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
                 child: const Text('OK'),
-              ),
-            ],
           ),
-        );
-      }
+        ],
+      ),
+    );
+  }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Import failed: $e'),
             backgroundColor: Colors.red,
@@ -648,16 +648,16 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
       await projectProvider.syncFromCloud();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Data imported from cloud successfully!'),
             backgroundColor: Colors.green,
           ),
-        );
-      }
+    );
+  }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Cloud import failed: $e'),
             backgroundColor: Colors.red,
@@ -680,7 +680,7 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
       await projectProvider.syncToCloud();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Data synced to cloud successfully!'),
             backgroundColor: Colors.green,
@@ -708,12 +708,12 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
       await projectProvider.syncFromCloud();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Data downloaded from cloud successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+          backgroundColor: Colors.green,
+        ),
+      );
       }
     } catch (e) {
       if (mounted) {
