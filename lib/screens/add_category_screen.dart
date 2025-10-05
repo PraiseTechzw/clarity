@@ -97,14 +97,25 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          if (widget.editingCategory != null)
+            IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: _showDeleteDialog,
+            ),
+        ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Header Card
+              _buildHeaderCard(),
+              const SizedBox(height: 24),
+
               // Category Type Selection
               _buildTypeSelection(),
               const SizedBox(height: 24),

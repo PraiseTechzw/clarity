@@ -523,68 +523,66 @@ class _BudgetAnalyticsScreenState extends State<BudgetAnalyticsScreen>
     final trends = budgetProvider.getMonthlySpendingTrends();
 
     return trends.isEmpty
-        ? const Center(
-            child: Text('No spending data available for trends'),
-          )
+        ? const Center(child: Text('No spending data available for trends'))
         : LineChart(
-                    LineChartData(
-                      gridData: FlGridData(show: true),
-                      titlesData: FlTitlesData(
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 40,
-                            getTitlesWidget: (value, meta) {
-                              return Text(
-                                '\$${value.toInt()}',
-                                style: const TextStyle(fontSize: 10),
-                              );
-                            },
-                          ),
-                        ),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            getTitlesWidget: (value, meta) {
-                              if (value.toInt() < trends.length) {
-                                return Text(
-                                  trends[value.toInt()]['monthName'],
-                                  style: const TextStyle(fontSize: 10),
-                                );
-                              }
-                              return const Text('');
-                            },
-                          ),
-                        ),
-                        topTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        rightTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                      ),
-                      borderData: FlBorderData(show: true),
-                      lineBarsData: [
-                        LineChartBarData(
-                          spots: trends.asMap().entries.map((entry) {
-                            final index = entry.key;
-                            final trend = entry.value;
-                            return FlSpot(index.toDouble(), trend['spending']);
-                          }).toList(),
-                          isCurved: true,
-                          color: Theme.of(context).colorScheme.primary,
-                          barWidth: 3,
-                          dotData: const FlDotData(show: true),
-                          belowBarData: BarAreaData(
-                            show: true,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.primary.withOpacity(0.1),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
+            LineChartData(
+              gridData: FlGridData(show: true),
+              titlesData: FlTitlesData(
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 40,
+                    getTitlesWidget: (value, meta) {
+                      return Text(
+                        '\$${value.toInt()}',
+                        style: const TextStyle(fontSize: 10),
+                      );
+                    },
+                  ),
+                ),
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    getTitlesWidget: (value, meta) {
+                      if (value.toInt() < trends.length) {
+                        return Text(
+                          trends[value.toInt()]['monthName'],
+                          style: const TextStyle(fontSize: 10),
+                        );
+                      }
+                      return const Text('');
+                    },
+                  ),
+                ),
+                topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+              ),
+              borderData: FlBorderData(show: true),
+              lineBarsData: [
+                LineChartBarData(
+                  spots: trends.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final trend = entry.value;
+                    return FlSpot(index.toDouble(), trend['spending']);
+                  }).toList(),
+                  isCurved: true,
+                  color: Theme.of(context).colorScheme.primary,
+                  barWidth: 3,
+                  dotData: const FlDotData(show: true),
+                  belowBarData: BarAreaData(
+                    show: true,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withOpacity(0.1),
+                  ),
+                ),
+              ],
+            ),
+          );
   }
 
   Widget _buildTopExpensesCard(
