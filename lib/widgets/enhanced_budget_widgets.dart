@@ -193,6 +193,14 @@ class EnhancedBudgetProgressCard extends StatelessWidget {
       ),
     );
   }
+
+  double _getWeeksInMonth() {
+    final now = DateTime.now();
+    final firstDay = DateTime(now.year, now.month, 1);
+    final lastDay = DateTime(now.year, now.month + 1, 0);
+    final daysInMonth = lastDay.day;
+    return daysInMonth / 7.0;
+  }
 }
 
 class EnhancedSpendingChartCard extends StatelessWidget {
