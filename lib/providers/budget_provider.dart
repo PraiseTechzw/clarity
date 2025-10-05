@@ -839,6 +839,55 @@ class BudgetProvider with ChangeNotifier {
     };
   }
 
+  // Get monthly spending data for the last 6 months for trends chart
+  List<Map<String, dynamic>> getMonthlySpendingTrends() {
+    final now = DateTime.now();
+    final trends = <Map<String, dynamic>>[];
+
+    // Get data for the last 6 months
+    for (int i = 5; i >= 0; i--) {
+      final month = DateTime(now.year, now.month - i);
+      final nextMonth = DateTime(now.year, now.month - i + 1);
+
+      final monthTransactions = _transactions.where((t) {
+        return t.date.isAfter(month.subtract(const Duration(days: 1))) &&
+            t.date.isBefore(nextMonth) &&
+            t.type == TransactionType.expense;
+      }).toList();
+
+      final totalSpending = monthTransactions.fold(
+        0.0,
+        (sum, t) => sum + t.amount,
+      );
+
+      trends.add({
+        'month': month,
+        'spending': totalSpending,
+        'monthName': _getMonthName(month.month),
+      });
+    }
+
+    return trends;
+  }
+
+  String _getMonthName(int month) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return months[month - 1];
+  }
+
   // Set selected date
   void setSelectedDate(DateTime date) {
     _selectedDate = date;
