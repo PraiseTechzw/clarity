@@ -72,11 +72,16 @@ class BudgetProvider with ChangeNotifier {
     }
   }
 
+  // Public method to refresh categories
+  Future<void> refreshCategories() async {
+    await _loadCategories();
+  }
+
   Future<void> addCategory(Category category) async {
     try {
       await _databaseHelper.insertCategory(category);
-      _categories.add(category);
-      notifyListeners();
+      // Reload categories from database to ensure consistency
+      await _loadCategories();
     } catch (e) {
       _error = 'Failed to add category: $e';
       notifyListeners();
@@ -86,11 +91,8 @@ class BudgetProvider with ChangeNotifier {
   Future<void> updateCategory(Category category) async {
     try {
       await _databaseHelper.updateCategory(category);
-      final index = _categories.indexWhere((c) => c.id == category.id);
-      if (index != -1) {
-        _categories[index] = category;
-        notifyListeners();
-      }
+      // Reload categories from database to ensure consistency
+      await _loadCategories();
     } catch (e) {
       _error = 'Failed to update category: $e';
       notifyListeners();
@@ -100,8 +102,8 @@ class BudgetProvider with ChangeNotifier {
   Future<void> deleteCategory(String categoryId) async {
     try {
       await _databaseHelper.deleteCategory(categoryId);
-      _categories.removeWhere((c) => c.id == categoryId);
-      notifyListeners();
+      // Reload categories from database to ensure consistency
+      await _loadCategories();
     } catch (e) {
       _error = 'Failed to delete category: $e';
       notifyListeners();

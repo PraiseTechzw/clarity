@@ -22,7 +22,7 @@ class BudgetDatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -40,6 +40,9 @@ class BudgetDatabaseHelper {
         type TEXT NOT NULL,
         budget_limit REAL,
         is_active INTEGER NOT NULL DEFAULT 1,
+        icon_code_point INTEGER NOT NULL DEFAULT 0,
+        icon_font_family TEXT NOT NULL DEFAULT 'MaterialIcons',
+        color_value INTEGER NOT NULL DEFAULT 0,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
       )
@@ -155,7 +158,10 @@ class BudgetDatabaseHelper {
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     // Handle database upgrades here
     if (oldVersion < 2) {
-      // Add new columns or tables for version 2
+      // Add new columns to categories table
+      await db.execute('ALTER TABLE categories ADD COLUMN icon_code_point INTEGER NOT NULL DEFAULT 0');
+      await db.execute('ALTER TABLE categories ADD COLUMN icon_font_family TEXT NOT NULL DEFAULT \'MaterialIcons\'');
+      await db.execute('ALTER TABLE categories ADD COLUMN color_value INTEGER NOT NULL DEFAULT 0');
     }
   }
 
