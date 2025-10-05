@@ -222,10 +222,17 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Category Name',
+          'Category Name *',
           style: Theme.of(
             context,
           ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Enter a descriptive name for your category',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         const SizedBox(height: 12),
         TextFormField(
@@ -234,12 +241,17 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
-              vertical: 12,
+              vertical: 16,
             ),
+            hintText: 'e.g., Groceries, Salary, Entertainment',
+            prefixIcon: const Icon(Icons.label_outline),
           ),
           validator: (value) {
             if (value == null || value.isEmpty) {
               return 'Please enter a category name';
+            }
+            if (value.trim().length < 2) {
+              return 'Category name must be at least 2 characters';
             }
             return null;
           },
@@ -393,25 +405,39 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
             context,
           ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
+        const SizedBox(height: 8),
+        Text(
+          'Set a monthly spending limit for this category',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
         const SizedBox(height: 12),
         TextFormField(
           controller: _budgetLimitController,
-          keyboardType: TextInputType.number,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
           decoration: InputDecoration(
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             prefixText: '\$ ',
+            prefixIcon: const Icon(Icons.account_balance_wallet),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
-              vertical: 12,
+              vertical: 16,
             ),
+            hintText: '0.00',
+            suffixText: 'USD',
           ),
           validator: (value) {
             if (value != null && value.isNotEmpty) {
-              if (double.tryParse(value) == null) {
+              final amount = double.tryParse(value);
+              if (amount == null) {
                 return 'Please enter a valid amount';
               }
-              if (double.parse(value) < 0) {
+              if (amount < 0) {
                 return 'Budget limit cannot be negative';
+              }
+              if (amount > 1000000) {
+                return 'Budget limit cannot exceed \$1,000,000';
               }
             }
             return null;
@@ -440,28 +466,162 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
   }
 
   Widget _buildSaveButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: _saveCategory,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _saveCategory,
+            icon: Icon(
+              widget.editingCategory != null ? Icons.update : Icons.add,
+              size: 20,
+            ),
+            label: Text(
+              widget.editingCategory != null ? 'Update Category' : 'Create Category',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 2,
+            ),
           ),
         ),
-        child: const Text(
-          'Save Category',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        const SizedBox(height: 12),
+        Text(
+          'Your category will be saved to the database and available for transactions',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          textAlign: TextAlign.center,
         ),
+      ],
+    );
+  }
+
+  Widget _buildHeaderCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            Theme.of(context).colorScheme.secondary.withOpacity(0.1),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              widget.editingCategory != null ? Icons.edit : Icons.add,
+              color: Theme.of(context).colorScheme.primary,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.editingCategory != null ? 'Edit Category' : 'Create New Category',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.editingCategory != null 
+                      ? 'Update your category details'
+                      : 'Add a new category to organize your transactions',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
+  void _showDeleteDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Category'),
+        content: Text(
+          'Are you sure you want to delete "${widget.editingCategory?.name}"? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: _deleteCategory,
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteCategory() async {
+    try {
+      final budgetProvider = Provider.of<BudgetProvider>(
+        context,
+        listen: false,
+      );
+
+      await budgetProvider.deleteCategory(widget.editingCategory!.id);
+
+      if (mounted) {
+        Navigator.pop(context); // Close dialog
+        Navigator.pop(context); // Close screen
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Category deleted successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error deleting category: $e')),
+        );
+      }
+    }
+  }
+
   void _saveCategory() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
 
     try {
       final budgetProvider = Provider.of<BudgetProvider>(
@@ -492,16 +652,28 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
       }
 
       if (mounted) {
+        Navigator.pop(context); // Close loading dialog
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Category saved successfully')),
+          SnackBar(
+            content: Text(
+              widget.editingCategory != null 
+                  ? 'Category updated successfully' 
+                  : 'Category created successfully',
+            ),
+            backgroundColor: Colors.green,
+          ),
         );
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error saving category: $e')));
+        Navigator.pop(context); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving category: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
