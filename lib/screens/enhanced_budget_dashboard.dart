@@ -268,7 +268,7 @@ class _EnhancedBudgetDashboardState extends State<EnhancedBudgetDashboard>
     BudgetProvider budgetProvider,
   ) {
     final percentageChanges = budgetProvider.getPercentageChanges();
-    
+
     return SliverToBoxAdapter(
       child: FadeTransition(
         opacity: _fadeAnimation,

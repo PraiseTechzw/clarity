@@ -787,19 +787,19 @@ class BudgetProvider with ChangeNotifier {
     final now = DateTime.now();
     final currentMonth = DateTime(now.year, now.month);
     final lastMonth = DateTime(now.year, now.month - 1);
-    
+
     // Get current month data
     final currentMonthTransactions = _transactions.where((t) {
       final transactionDate = DateTime(t.date.year, t.date.month);
       return transactionDate.isAtSameMomentAs(currentMonth);
     }).toList();
-    
+
     // Get last month data
     final lastMonthTransactions = _transactions.where((t) {
       final transactionDate = DateTime(t.date.year, t.date.month);
       return transactionDate.isAtSameMomentAs(lastMonth);
     }).toList();
-    
+
     // Calculate totals
     final currentIncome = currentMonthTransactions
         .where((t) => t.type == TransactionType.income)
@@ -810,7 +810,7 @@ class BudgetProvider with ChangeNotifier {
     final currentSavings = currentMonthTransactions
         .where((t) => t.type == TransactionType.savings)
         .fold(0.0, (sum, t) => sum + t.amount);
-    
+
     final lastIncome = lastMonthTransactions
         .where((t) => t.type == TransactionType.income)
         .fold(0.0, (sum, t) => sum + t.amount);
@@ -820,12 +820,18 @@ class BudgetProvider with ChangeNotifier {
     final lastSavings = lastMonthTransactions
         .where((t) => t.type == TransactionType.savings)
         .fold(0.0, (sum, t) => sum + t.amount);
-    
+
     // Calculate percentage changes
-    final incomeChange = lastIncome > 0 ? ((currentIncome - lastIncome) / lastIncome) * 100 : 0.0;
-    final expensesChange = lastExpenses > 0 ? ((currentExpenses - lastExpenses) / lastExpenses) * 100 : 0.0;
-    final savingsChange = lastSavings > 0 ? ((currentSavings - lastSavings) / lastSavings) * 100 : 0.0;
-    
+    final incomeChange = lastIncome > 0
+        ? ((currentIncome - lastIncome) / lastIncome) * 100
+        : 0.0;
+    final expensesChange = lastExpenses > 0
+        ? ((currentExpenses - lastExpenses) / lastExpenses) * 100
+        : 0.0;
+    final savingsChange = lastSavings > 0
+        ? ((currentSavings - lastSavings) / lastSavings) * 100
+        : 0.0;
+
     return {
       'income': incomeChange,
       'expenses': expensesChange,
