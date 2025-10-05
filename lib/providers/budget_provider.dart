@@ -585,6 +585,254 @@ class BudgetProvider with ChangeNotifier {
     return _categories.where((c) => c.type == type && c.isActive).toList();
   }
 
+  // Get monthly spending data for analytics
+  Map<String, double> getMonthlySpendingData() {
+    final now = DateTime.now();
+    final currentMonth = DateTime(now.year, now.month);
+    final lastMonth = DateTime(now.year, now.month - 1);
+
+    final currentMonthTransactions = _transactions.where((t) {
+      final transactionDate = DateTime(t.date.year, t.date.month);
+      return transactionDate.isAtSameMomentAs(currentMonth) &&
+          t.type == TransactionType.expense;
+    }).toList();
+
+    final lastMonthTransactions = _transactions.where((t) {
+      final transactionDate = DateTime(t.date.year, t.date.month);
+      return transactionDate.isAtSameMomentAs(lastMonth) &&
+          t.type == TransactionType.expense;
+    }).toList();
+
+    final currentMonthTotal = currentMonthTransactions.fold(
+      0.0,
+      (sum, t) => sum + t.amount,
+    );
+    final lastMonthTotal = lastMonthTransactions.fold(
+      0.0,
+      (sum, t) => sum + t.amount,
+    );
+
+    // Calculate average from last 3 months
+    final threeMonthsAgo = DateTime(now.year, now.month - 2);
+    final averageTransactions = _transactions.where((t) {
+      final transactionDate = DateTime(t.date.year, t.date.month);
+      return transactionDate.isAfter(threeMonthsAgo) &&
+          transactionDate.isBefore(currentMonth.add(const Duration(days: 1))) &&
+          t.type == TransactionType.expense;
+    }).toList();
+
+    final averageTotal = averageTransactions.isNotEmpty
+        ? averageTransactions.fold(0.0, (sum, t) => sum + t.amount) / 3
+        : 0.0;
+
+    return {
+      'currentMonth': currentMonthTotal,
+      'lastMonth': lastMonthTotal,
+      'average': averageTotal,
+    };
+  }
+
+  // Generate real insights from user data
+  List<BudgetInsight> generateInsights() {
+    final insights = <BudgetInsight>[];
+    final now = DateTime.now();
+    final currentMonth = DateTime(now.year, now.month);
+    final lastMonth = DateTime(now.year, now.month - 1);
+
+    // Get current month expenses
+    final currentMonthExpenses = _transactions.where((t) {
+      final transactionDate = DateTime(t.date.year, t.date.month);
+      return transactionDate.isAtSameMomentAs(currentMonth) &&
+          t.type == TransactionType.expense;
+    }).toList();
+
+    // Get last month expenses
+    final lastMonthExpenses = _transactions.where((t) {
+      final transactionDate = DateTime(t.date.year, t.date.month);
+      return transactionDate.isAtSameMomentAs(lastMonth) &&
+          t.type == TransactionType.expense;
+    }).toList();
+
+    final currentMonthTotal = currentMonthExpenses.fold(
+      0.0,
+      (sum, t) => sum + t.amount,
+    );
+    final lastMonthTotal = lastMonthExpenses.fold(
+      0.0,
+      (sum, t) => sum + t.amount,
+    );
+
+    // Insight 1: Spending comparison
+    if (currentMonthTotal > 0 && lastMonthTotal > 0) {
+      final percentageChange =
+          ((currentMonthTotal - lastMonthTotal) / lastMonthTotal) * 100;
+      if (percentageChange > 20) {
+        insights.add(
+          BudgetInsight(
+            type: InsightType.warning,
+            title: 'Spending Increase Alert',
+            description:
+                'Your spending increased by ${percentageChange.toStringAsFixed(1)}% this month compared to last month.',
+            actionText: 'Review Expenses',
+            createdAt: DateTime.now(),
+          ),
+        );
+      } else if (percentageChange < -20) {
+        insights.add(
+          BudgetInsight(
+            type: InsightType.success,
+            title: 'Great Savings!',
+            description:
+                'You saved ${(-percentageChange).toStringAsFixed(1)}% compared to last month. Keep it up!',
+            actionText: 'View Savings',
+            createdAt: DateTime.now(),
+          ),
+        );
+      }
+    }
+
+    // Insight 2: Category spending analysis
+    final categorySpending = <String, double>{};
+    for (final transaction in currentMonthExpenses) {
+      final category = _categories.firstWhere(
+        (c) => c.id == transaction.categoryId,
+        orElse: () => Category(
+          id: '',
+          name: 'Unknown',
+          icon: 'help',
+          color: 'grey',
+          type: TransactionType.expense,
+        ),
+      );
+      categorySpending[category.name] =
+          (categorySpending[category.name] ?? 0) + transaction.amount;
+    }
+
+    if (categorySpending.isNotEmpty) {
+      final topCategory = categorySpending.entries.reduce(
+        (a, b) => a.value > b.value ? a : b,
+      );
+      final topCategoryPercentage =
+          (topCategory.value / currentMonthTotal) * 100;
+
+      if (topCategoryPercentage > 40) {
+        insights.add(
+          BudgetInsight(
+            type: InsightType.tip,
+            title: 'Top Spending Category',
+            description:
+                '${topCategory.key} accounts for ${topCategoryPercentage.toStringAsFixed(1)}% of your spending this month.',
+            actionText: 'View Category',
+            createdAt: DateTime.now(),
+          ),
+        );
+      }
+    }
+
+    // Insight 3: Budget utilization
+    if (_summary != null && _summary!.monthlyBudget > 0) {
+      final budgetUtilization =
+          (_summary!.budgetUsed / _summary!.monthlyBudget) * 100;
+      if (budgetUtilization > 90) {
+        insights.add(
+          BudgetInsight(
+            type: InsightType.budgetExceeded,
+            title: 'Budget Warning',
+            description:
+                'You\'ve used ${budgetUtilization.toStringAsFixed(1)}% of your monthly budget.',
+            actionText: 'Adjust Budget',
+            createdAt: DateTime.now(),
+          ),
+        );
+      } else if (budgetUtilization < 50) {
+        insights.add(
+          BudgetInsight(
+            type: InsightType.success,
+            title: 'Budget on Track',
+            description:
+                'You\'ve only used ${budgetUtilization.toStringAsFixed(1)}% of your budget. Great job!',
+            actionText: 'View Budget',
+            createdAt: DateTime.now(),
+          ),
+        );
+      }
+    }
+
+    // Insight 4: Savings goals progress
+    final activeSavingsGoals = _savingsGoals
+        .where((g) => g.isActive && !g.isCompleted)
+        .toList();
+    if (activeSavingsGoals.isNotEmpty) {
+      final goal = activeSavingsGoals.first;
+      final progress = (goal.currentAmount / goal.targetAmount) * 100;
+      if (progress > 75) {
+        insights.add(
+          BudgetInsight(
+            type: InsightType.savingsMilestone,
+            title: 'Savings Goal Progress',
+            description:
+                'You\'re ${progress.toStringAsFixed(1)}% towards your ${goal.name} goal!',
+            actionText: 'View Goals',
+            createdAt: DateTime.now(),
+          ),
+        );
+      }
+    }
+
+    return insights;
+  }
+
+  // Calculate percentage changes for dashboard stats
+  Map<String, double> getPercentageChanges() {
+    final now = DateTime.now();
+    final currentMonth = DateTime(now.year, now.month);
+    final lastMonth = DateTime(now.year, now.month - 1);
+    
+    // Get current month data
+    final currentMonthTransactions = _transactions.where((t) {
+      final transactionDate = DateTime(t.date.year, t.date.month);
+      return transactionDate.isAtSameMomentAs(currentMonth);
+    }).toList();
+    
+    // Get last month data
+    final lastMonthTransactions = _transactions.where((t) {
+      final transactionDate = DateTime(t.date.year, t.date.month);
+      return transactionDate.isAtSameMomentAs(lastMonth);
+    }).toList();
+    
+    // Calculate totals
+    final currentIncome = currentMonthTransactions
+        .where((t) => t.type == TransactionType.income)
+        .fold(0.0, (sum, t) => sum + t.amount);
+    final currentExpenses = currentMonthTransactions
+        .where((t) => t.type == TransactionType.expense)
+        .fold(0.0, (sum, t) => sum + t.amount);
+    final currentSavings = currentMonthTransactions
+        .where((t) => t.type == TransactionType.savings)
+        .fold(0.0, (sum, t) => sum + t.amount);
+    
+    final lastIncome = lastMonthTransactions
+        .where((t) => t.type == TransactionType.income)
+        .fold(0.0, (sum, t) => sum + t.amount);
+    final lastExpenses = lastMonthTransactions
+        .where((t) => t.type == TransactionType.expense)
+        .fold(0.0, (sum, t) => sum + t.amount);
+    final lastSavings = lastMonthTransactions
+        .where((t) => t.type == TransactionType.savings)
+        .fold(0.0, (sum, t) => sum + t.amount);
+    
+    // Calculate percentage changes
+    final incomeChange = lastIncome > 0 ? ((currentIncome - lastIncome) / lastIncome) * 100 : 0.0;
+    final expensesChange = lastExpenses > 0 ? ((currentExpenses - lastExpenses) / lastExpenses) * 100 : 0.0;
+    final savingsChange = lastSavings > 0 ? ((currentSavings - lastSavings) / lastSavings) * 100 : 0.0;
+    
+    return {
+      'income': incomeChange,
+      'expenses': expensesChange,
+      'savings': savingsChange,
+    };
+  }
+
   // Set selected date
   void setSelectedDate(DateTime date) {
     _selectedDate = date;

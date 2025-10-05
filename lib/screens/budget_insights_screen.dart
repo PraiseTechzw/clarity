@@ -206,53 +206,9 @@ class _BudgetInsightsScreenState extends State<BudgetInsightsScreen>
               ),
               const SizedBox(height: 16),
 
-              // Mock insights - replace with actual AI-generated insights
-              SmartInsightCard(
-                insight: BudgetInsight(
-                  id: '1',
-                  type: InsightType.warning,
-                  title: 'High Food Spending',
-                  description:
-                      'You\'re spending 35% more on food this month compared to last month. Consider meal planning to reduce costs.',
-                  actionText: 'View Food Budget',
-                  createdAt: DateTime.now(),
-                ),
-              ),
-
-              SmartInsightCard(
-                insight: BudgetInsight(
-                  id: '2',
-                  type: InsightType.success,
-                  title: 'Great Savings Progress',
-                  description:
-                      'You\'ve saved 15% more this month! Keep up the excellent work.',
-                  actionText: 'View Savings Goals',
-                  createdAt: DateTime.now(),
-                ),
-              ),
-
-              SmartInsightCard(
-                insight: BudgetInsight(
-                  id: '3',
-                  type: InsightType.tip,
-                  title: 'Subscription Optimization',
-                  description:
-                      'You have 3 unused subscriptions costing \$45/month. Consider canceling them.',
-                  actionText: 'Manage Subscriptions',
-                  createdAt: DateTime.now(),
-                ),
-              ),
-
-              SmartInsightCard(
-                insight: BudgetInsight(
-                  id: '4',
-                  type: InsightType.info,
-                  title: 'Spending Pattern Detected',
-                  description:
-                      'You tend to spend more on weekends. Set a weekend budget to control expenses.',
-                  actionText: 'Set Weekend Budget',
-                  createdAt: DateTime.now(),
-                ),
+              // Real insights generated from user data
+              ...budgetProvider.generateInsights().map(
+                (insight) => SmartInsightCard(insight: insight),
               ),
             ],
           ),
@@ -584,36 +540,21 @@ class _BudgetInsightsScreenState extends State<BudgetInsightsScreen>
                 ),
                 const SizedBox(height: 20),
 
-                _buildGoalProgressItem(
-                  context,
-                  'Emergency Fund',
-                  0.75,
-                  '\$3,750 / \$5,000',
-                  'Save \$1,250 more',
-                  Colors.green,
-                ),
-
-                const SizedBox(height: 16),
-
-                _buildGoalProgressItem(
-                  context,
-                  'Vacation Fund',
-                  0.40,
-                  '\$800 / \$2,000',
-                  'Save \$1,200 more',
-                  Colors.blue,
-                ),
-
-                const SizedBox(height: 16),
-
-                _buildGoalProgressItem(
-                  context,
-                  'New Laptop',
-                  0.20,
-                  '\$400 / \$2,000',
-                  'Save \$1,600 more',
-                  Colors.orange,
-                ),
+                // Real savings goals from database
+                ...budgetProvider.savingsGoals
+                    .where((goal) => goal.isActive && !goal.isCompleted)
+                    .take(3)
+                    .map((goal) => Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: _buildGoalProgressItem(
+                            context,
+                            goal.name,
+                            goal.progress,
+                            '\$${goal.currentAmount.toStringAsFixed(0)} / \$${goal.targetAmount.toStringAsFixed(0)}',
+                            'Save \$${goal.remainingAmount.toStringAsFixed(0)} more',
+                            Color(goal.colorValue),
+                          ),
+                        )),
               ],
             ),
           ),

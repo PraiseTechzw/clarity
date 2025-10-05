@@ -870,13 +870,30 @@ class _BudgetAnalyticsScreenState extends State<BudgetAnalyticsScreen>
     BuildContext context,
     BudgetProvider budgetProvider,
   ) {
+    final spendingData = budgetProvider.getMonthlySpendingData();
+
     return Column(
       children: [
-        _buildComparisonItem(context, 'This Month', 1200.0, Colors.blue),
+        _buildComparisonItem(
+          context,
+          'This Month',
+          spendingData['currentMonth'] ?? 0.0,
+          Colors.blue,
+        ),
         const SizedBox(height: 12),
-        _buildComparisonItem(context, 'Last Month', 980.0, Colors.green),
+        _buildComparisonItem(
+          context,
+          'Last Month',
+          spendingData['lastMonth'] ?? 0.0,
+          Colors.green,
+        ),
         const SizedBox(height: 12),
-        _buildComparisonItem(context, 'Average', 1100.0, Colors.orange),
+        _buildComparisonItem(
+          context,
+          'Average',
+          spendingData['average'] ?? 0.0,
+          Colors.orange,
+        ),
       ],
     );
   }

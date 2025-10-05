@@ -267,6 +267,8 @@ class _EnhancedBudgetDashboardState extends State<EnhancedBudgetDashboard>
     BuildContext context,
     BudgetProvider budgetProvider,
   ) {
+    final percentageChanges = budgetProvider.getPercentageChanges();
+    
     return SliverToBoxAdapter(
       child: FadeTransition(
         opacity: _fadeAnimation,
@@ -283,7 +285,7 @@ class _EnhancedBudgetDashboardState extends State<EnhancedBudgetDashboard>
                       budgetProvider.summary?.totalIncome ?? 0,
                       Icons.trending_up,
                       Colors.green,
-                      '+12.5%',
+                      '${percentageChanges['income']!.toStringAsFixed(1)}%',
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -294,7 +296,7 @@ class _EnhancedBudgetDashboardState extends State<EnhancedBudgetDashboard>
                       budgetProvider.summary?.totalExpenses ?? 0,
                       Icons.trending_down,
                       Colors.red,
-                      '+8.2%',
+                      '${percentageChanges['expenses']!.toStringAsFixed(1)}%',
                     ),
                   ),
                 ],
@@ -309,7 +311,7 @@ class _EnhancedBudgetDashboardState extends State<EnhancedBudgetDashboard>
                       budgetProvider.summary?.totalSavings ?? 0,
                       Icons.savings,
                       Colors.purple,
-                      '+15.3%',
+                      '${percentageChanges['savings']!.toStringAsFixed(1)}%',
                     ),
                   ),
                   const SizedBox(width: 12),

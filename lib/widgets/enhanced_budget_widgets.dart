@@ -138,7 +138,7 @@ class EnhancedBudgetProgressCard extends StatelessWidget {
                 child: _buildStatItem(
                   context,
                   'Weekly Avg',
-                  '\$${(summary.totalExpenses / 4.3).toStringAsFixed(2)}',
+                  '\$${(summary.totalExpenses / _getWeeksInMonth()).toStringAsFixed(2)}',
                   Icons.date_range,
                   Colors.purple,
                 ),
@@ -822,5 +822,13 @@ class BudgetForecastCard extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  double _getWeeksInMonth() {
+    final now = DateTime.now();
+    final firstDay = DateTime(now.year, now.month, 1);
+    final lastDay = DateTime(now.year, now.month + 1, 0);
+    final daysInMonth = lastDay.day;
+    return daysInMonth / 7.0;
   }
 }
