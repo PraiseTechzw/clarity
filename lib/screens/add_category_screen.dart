@@ -477,7 +477,9 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
               size: 20,
             ),
             label: Text(
-              widget.editingCategory != null ? 'Update Category' : 'Create Category',
+              widget.editingCategory != null
+                  ? 'Update Category'
+                  : 'Create Category',
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             style: ElevatedButton.styleFrom(
@@ -540,14 +542,16 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.editingCategory != null ? 'Edit Category' : 'Create New Category',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  widget.editingCategory != null
+                      ? 'Edit Category'
+                      : 'Create New Category',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  widget.editingCategory != null 
+                  widget.editingCategory != null
                       ? 'Update your category details'
                       : 'Add a new category to organize your transactions',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -604,9 +608,9 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
     } catch (e) {
       if (mounted) {
         Navigator.pop(context); // Close dialog
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error deleting category: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error deleting category: $e')));
       }
     }
   }
@@ -618,9 +622,7 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(),
-      ),
+      builder: (context) => const Center(child: CircularProgressIndicator()),
     );
 
     try {
@@ -656,8 +658,8 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              widget.editingCategory != null 
-                  ? 'Category updated successfully' 
+              widget.editingCategory != null
+                  ? 'Category updated successfully'
                   : 'Category created successfully',
             ),
             backgroundColor: Colors.green,
